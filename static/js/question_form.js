@@ -14,20 +14,35 @@
   function toLocalInput(d) {
     return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
   }
-  if (local) {
+  var dateEl = document.getElementById("closes_date");
+  var timeEl = document.getElementById("closes_time");
+  if (local && dateEl && timeEl) {
+    var readOnly = dateEl.readOnly;
     var existing = local.getAttribute("data-utc");
+    var initial = "";
     if (existing) {            // düzenleme: kayıtlı UTC değerini yerel saate çevirip göster
       var d0 = new Date(existing);
-      if (!isNaN(d0)) local.value = toLocalInput(d0);
+      if (!isNaN(d0)) initial = toLocalInput(d0);
+    } else if (local.value) {
+      initial = local.value;   // hatalı gönderimden dönen değer
     }
-    if (!local.readOnly) local.min = toLocalInput(new Date(Date.now() + 5 * 60000));
+    if (initial.indexOf("T") > 0) {
+      dateEl.value = initial.split("T")[0];
+      timeEl.value = initial.split("T")[1].slice(0, 5);
+    }
+    if (!readOnly) dateEl.min = toLocalInput(new Date(Date.now() + 5 * 60000)).split("T")[0];
     var sync = function () {
-      if (utc && local.value) {
+      if (dateEl.value && timeEl.value) {
+        local.value = dateEl.value + "T" + timeEl.value;
         var d = new Date(local.value);
-        utc.value = isNaN(d) ? "" : d.toISOString();
+        if (utc) utc.value = isNaN(d) ? "" : d.toISOString();
+      } else {
+        local.value = "";
+        if (utc) utc.value = "";
       }
     };
-    local.addEventListener("input", sync);
+    dateEl.addEventListener("input", sync);
+    timeEl.addEventListener("input", sync);
     form.addEventListener("submit", sync);
     sync();
   }

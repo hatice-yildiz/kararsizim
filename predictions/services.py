@@ -6,10 +6,16 @@ veritabanı seviyesinde uygulanır; yani arayüzü/sunucuyu atlayan bir yol olsa
 """
 from contextlib import contextmanager
 
+from django.contrib.auth import get_user_model
 from django.db import DatabaseError, IntegrityError, transaction
+from datetime import timedelta
+
 from django.utils import timezone
 
 from .models import CORRECT_POINTS, MAX_CHOICES, MIN_CHOICES, Choice, Prediction, Question, Status
+
+
+MAX_QUESTIONS_PER_DAY = 5  # kötüye kullanım (spam / puan çiftliği) sınırı: son 24 saatte açılabilecek soru
 
 
 class ServiceError(Exception):
@@ -69,6 +75,11 @@ def create_question(user, data):
     if not MIN_CHOICES <= len(choices) <= MAX_CHOICES:
         raise ServiceError(f"{MIN_CHOICES}-{MAX_CHOICES} arası seçenek girmelisin.")
     with transaction.atomic():
+        # Aynı kullanıcının eşzamanlı isteklerinde sınırın aşılmaması için kullanıcı satırı kilitlenir.
+        get_user_model().objects.select_for_update().get(pk=user.pk)
+        recent = Question.objects.filter(created_by=user, created_at__gte=timezone.now() - timedelta(days=1)).count()
+        if recent >= MAX_QUESTIONS_PER_DAY:
+            raise ServiceError(f"Günde en fazla {MAX_QUESTIONS_PER_DAY} tahmin sorusu açabilirsin. Biraz sonra tekrar dene.")
         question = Question.objects.create(
             title=data["title"],
             description=data["description"],

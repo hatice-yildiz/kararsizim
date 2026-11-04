@@ -40,7 +40,8 @@ class Question(models.Model):
     description = models.TextField("açıklama", max_length=500, blank=True)
     resolution_criteria = models.TextField("sonucun belirlenme ölçütü", max_length=500)
     category = models.CharField("kategori", max_length=20, choices=Category.choices, default=Category.OTHER)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="questions")
+    # PROTECT: bir hesap silinirken başkalarının tahminleri ve puanları (sahibinin soruları üzerinden) kaybolmasın.
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="questions")
     closes_at = models.DateTimeField("tahminlerin kapanışı")  # UTC saklanır
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -127,7 +128,7 @@ class Choice(models.Model):
 class Prediction(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="predictions")
     choice = models.ForeignKey(Choice, on_delete=models.CASCADE, related_name="predictions")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="predictions")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="predictions")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     # Sonuçlanınca bir kez yazılır: doğruysa True/10 puan, yanlışsa False/0.

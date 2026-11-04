@@ -114,7 +114,7 @@ class ResolveForm(forms.Form):
         },
     )
     source_url = forms.URLField(
-        label="Kaynak bağlantısı (opsiyonel)", required=False, max_length=300,
+        label="Kaynak bağlantısı (opsiyonel ama önerilir)", required=False, max_length=300,
         error_messages={"invalid": "Geçerli bir bağlantı gir (https://… ile başlamalı)."},
     )
 

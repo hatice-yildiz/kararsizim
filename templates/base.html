@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap&subset=latin-ext" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
-<body>
+<body data-server-time="{% now 'U' %}">
   <header class="navbar">
     <div class="container navbar-inner">
       <a href="{% url 'home' %}" class="logo" aria-label="Tahmince ana sayfa"><span class="logo-mark">🎯</span>Tahmince</a>

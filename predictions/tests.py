@@ -688,3 +688,132 @@ class RemovedLegacyPollsTests(TestCase):
 
     def test_no_legacy_voter_cookie(self):
         self.assertNotIn("voter_id", self.client.get("/").cookies)
+
+
+# ============================================================================ inceleme düzeltmeleri
+class DailyQuestionLimitTests(TestCase):
+    """#2: aynı hesap 24 saatte en fazla MAX_QUESTIONS_PER_DAY soru açabilir."""
+
+    def setUp(self):
+        self.user = make_user("ayse")
+        self.future = (timezone.localtime() + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M")
+
+    def data(self, n):
+        return {"title": f"Soru {n}", "resolution_criteria": "x", "category": "diger", "closes_at": self.future,
+                "choice_1": "A", "choice_2": "B"}
+
+    def test_limit_enforced_and_message_shown(self):
+        self.client.force_login(self.user)
+        for n in range(services.MAX_QUESTIONS_PER_DAY):
+            self.client.post("/soru/yeni/", self.data(n))
+        self.assertEqual(Question.objects.filter(created_by=self.user).count(), services.MAX_QUESTIONS_PER_DAY)
+        r = self.client.post("/soru/yeni/", self.data(99))
+        self.assertContains(r, "Günde en fazla")
+        self.assertEqual(Question.objects.filter(created_by=self.user).count(), services.MAX_QUESTIONS_PER_DAY)
+
+    def test_limit_is_per_user_and_expires_after_a_day(self):
+        for n in range(services.MAX_QUESTIONS_PER_DAY):
+            make_question(self.user, title=f"S{n}")
+        other = make_user("veli")
+        self.client.force_login(other)
+        self.assertEqual(self.client.post("/soru/yeni/", self.data(1)).status_code, 302)  # başkası etkilenmez
+        Question.objects.filter(created_by=self.user).update(created_at=timezone.now() - timedelta(days=2),
+                                                             closes_at=timezone.now() + timedelta(days=1))
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.post("/soru/yeni/", self.data(2)).status_code, 302)  # 24 saat geçince yeniden açılır
+
+
+class SourceWarningTests(TestCase):
+    """#3: kaynak yoksa sonucun yalnızca beyana dayandığı açıkça yazılır; kaynak varsa uyarı yok."""
+
+    def resolved(self, url):
+        owner = make_user("sahip" + ("1" if url else "0"))
+        q = close(make_question(owner, title="K" + ("1" if url else "0")))
+        services.resolve_question(owner, q.pk, q.choices.first().pk, "Sonuç açıklandı", url)
+        return q
+
+    def test_warning_only_without_source(self):
+        no_src, with_src = self.resolved(""), self.resolved("https://example.com/haber")
+        self.assertContains(self.client.get(f"/soru/{no_src.pk}/"), "Kaynak bağlantısı belirtilmedi")
+        r = self.client.get(f"/soru/{with_src.pk}/")
+        self.assertNotContains(r, "Kaynak bağlantısı belirtilmedi")
+        self.assertContains(r, "https://example.com/haber")
+
+    def test_source_stays_optional(self):
+        owner = make_user("sahip")
+        q = close(make_question(owner))
+        c = Client(); c.force_login(owner)
+        r = c.post(f"/soru/{q.pk}/sonuc/", {"choice": q.choices.first().pk, "note": "Resmi sonuç buydu", "confirm": "1"}, follow=True)
+        self.assertContains(r, "Sonuç açıklandı")
+
+
+class AccountDeletionProtectionTests(TestCase):
+    """#4: hesap silme, başkalarının tahminlerini ve puanlarını silmemeli."""
+
+    def test_deleting_question_owner_or_predictor_is_blocked_and_nothing_is_lost(self):
+        from django.db.models import ProtectedError
+        owner, winner = make_user("sahip"), make_user("kazanan")
+        q = make_question(owner)
+        force_prediction(question=q, choice=q.choices.first(), user=winner)
+        close(q)
+        services.resolve_question(owner, q.pk, q.choices.first().pk, "Sonuç açıklandı")
+        for user in (owner, winner):
+            with self.assertRaises(ProtectedError):
+                user.delete()
+        self.assertEqual(Prediction.objects.get().points_awarded, 10)
+        self.assertTrue(Question.objects.filter(pk=q.pk).exists())
+
+    def test_user_without_activity_can_still_be_deleted(self):
+        make_user("bos").delete()
+        self.assertFalse(User.objects.filter(username="bos").exists())
+
+
+class AdminModerationTests(TestCase):
+    """#5: yönetici soruları görüp silebilir, düzenleyemez/ekleyemez."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(username="yonetici", email="yonetici@example.com", password=PASSWORD)
+        self.owner, self.u = make_user("sahip"), make_user("ali")
+        self.q = make_question(self.owner)
+        Prediction.objects.create(question=self.q, choice=self.q.choices.first(), user=self.u)
+        self.client.force_login(self.admin)
+
+    def test_registered_and_pages_render(self):
+        for url in ["/admin/predictions/question/", f"/admin/predictions/question/{self.q.pk}/change/"]:
+            self.assertEqual(self.client.get(url).status_code, 200, url)
+        self.assertContains(self.client.get("/admin/predictions/question/"), self.q.title)
+
+    def test_no_add_and_no_edit(self):
+        self.assertEqual(self.client.get("/admin/predictions/question/add/").status_code, 403)
+        r = self.client.post(f"/admin/predictions/question/{self.q.pk}/change/", {"title": "Hile"})
+        self.q.refresh_from_db()
+        self.assertEqual(self.q.title, "Maç kim kazanır?")
+        self.assertIn(r.status_code, (302, 403))
+
+    def test_admin_can_delete_abusive_question_and_regular_users_cannot_reach_admin(self):
+        r = self.client.post(f"/admin/predictions/question/{self.q.pk}/delete/", {"post": "yes"})
+        self.assertEqual(r.status_code, 302)
+        self.assertFalse(Question.objects.filter(pk=self.q.pk).exists())
+        self.client.force_login(self.u)
+        self.assertEqual(self.client.get("/admin/predictions/question/").status_code, 302)  # girişe yönlenir
+
+    def test_predictions_shown_read_only_on_question_page_and_not_deletable_individually(self):
+        r = self.client.get(f"/admin/predictions/question/{self.q.pk}/change/")
+        self.assertContains(r, "ali")                       # tahmin sahibi görünür
+        self.assertEqual(self.client.get("/admin/predictions/prediction/").status_code, 404)  # ayrı yönetim sayfası yok
+        self.assertEqual(Prediction.objects.count(), 1)
+
+
+class ServerTimeTests(TestCase):
+    """#1: sayfa, cihaz saati yanlış olsa da düzeltme yapabilsin diye sunucu saatini taşır."""
+
+    def test_body_carries_server_time_in_epoch_seconds(self):
+        import re, time
+        html = self.client.get("/").content.decode()
+        m = re.search(r'<body data-server-time="(\d{10})"', html)
+        self.assertIsNotNone(m)
+        self.assertLess(abs(int(m.group(1)) - time.time()), 5)
+
+    def test_open_question_marks_reload_time_in_utc(self):
+        q = make_question(make_user("sahip"))
+        self.assertRegex(self.client.get(f"/soru/{q.pk}/").content.decode(), r'data-reload-at="\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z"')

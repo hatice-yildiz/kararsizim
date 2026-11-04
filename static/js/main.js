@@ -26,9 +26,15 @@
     if (m > 0) return m + " dk " + (s % 60) + " sn";
     return (s % 60) + " sn";
   }
+  // Kullanıcının cihaz saati yanlış olabilir: sunucu saatiyle farkı (skew) bir kez hesaplayıp tüm kıyaslarda kullan.
+  var skew = 0;
+  var serverTime = parseInt(document.body.getAttribute("data-server-time"), 10);
+  if (!isNaN(serverTime)) skew = serverTime * 1000 - Date.now();
+  function nowMs() { return Date.now() + skew; }
+
   var counters = document.querySelectorAll("[data-countdown]");
   function tick() {
-    var now = Date.now();
+    var now = nowMs();
     counters.forEach(function (el) {
       var end = new Date(el.getAttribute("data-countdown")).getTime();
       if (isNaN(end)) return;
@@ -43,8 +49,12 @@
     // Tahmin sayfası açıkken süre dolarsa sayfayı yenile ki tahmin düğmeleri kapansın.
     var page = document.querySelector("[data-reload-at]");
     if (page && Date.parse(page.getAttribute("data-reload-at")) <= now) {
+      var closeAt = page.getAttribute("data-reload-at");
       page.removeAttribute("data-reload-at");
-      setTimeout(function () { window.location.reload(); }, 1200);
+      // Emniyet kilidi: aynı kapanış için bu sekmede en fazla bir kez yenile (başka bir saat sapması döngüye dönüşmesin).
+      var key = "tahmince-reloaded:" + location.pathname + ":" + closeAt, done = false;
+      try { done = !!sessionStorage.getItem(key); sessionStorage.setItem(key, "1"); } catch (e) { /* depolama kapalı */ }
+      if (!done) setTimeout(function () { window.location.reload(); }, 1200);
     }
   }
   if (counters.length || document.querySelector("[data-reload-at]")) {

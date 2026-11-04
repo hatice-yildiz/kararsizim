@@ -30,7 +30,7 @@
       <div class="banner banner-resolved">
         <h3>🏆 Sonuç: {{ question.correct_choice.text }}</h3>
         <p>{{ question.resolution_note|linebreaksbr }}</p>
-        {% if question.resolution_source_url %}<p><a href="{{ question.resolution_source_url }}" target="_blank" rel="noopener noreferrer nofollow">Kaynak bağlantısı ↗</a></p>{% endif %}
+        {% if question.resolution_source_url %}<p><a href="{{ question.resolution_source_url }}" target="_blank" rel="noopener noreferrer nofollow">Kaynak bağlantısı ↗</a></p>{% else %}<p class="help">⚠ Kaynak bağlantısı belirtilmedi; bu sonuç yalnızca soruyu oluşturan kişinin beyanına dayanır.</p>{% endif %}
         <small>Sonuç, soruyu oluşturan kişi tarafından bildirildi · <time data-local datetime="{{ question.resolved_at|iso_utc }}">{{ question.resolved_at|date:"d.m.Y H:i" }}</time></small>
       </div>
       {% if my_prediction %}

@@ -26,6 +26,7 @@
       <div class="field">
         <label for="{{ form.source_url.id_for_label }}">{{ form.source_url.label }}</label>
         {{ form.source_url }}
+        <small class="help">Haber, resmi açıklama ya da skor sayfası gibi bir kaynak eklemek sonucun güvenilirliğini artırır; kaynak yoksa sayfada "kaynak belirtilmedi" uyarısı görünür.</small>
         {% for e in form.source_url.errors %}<small class="error">{{ e }}</small>{% endfor %}
       </div>
       <div class="form-actions">

@@ -90,6 +90,7 @@ main.container { flex: 1; padding-bottom: 56px; padding-top: 8px; }
 .message { padding: 12px 16px; border-radius: var(--radius-sm); font-weight: 500; border: 1px solid var(--border); background: var(--surface); transition: opacity .4s, transform .4s; }
 .message-success { background: var(--accent-soft); border-color: rgba(46, 229, 157, .4); color: #8BF5C8; }
 .message-error { background: var(--danger-soft); border-color: rgba(251, 113, 133, .45); color: #FDA4AF; }
+.message-warning { background: var(--warn-soft); border-color: rgba(251, 191, 36, .45); color: #FCD97A; }
 .message-info { background: var(--primary-soft); border-color: rgba(139, 92, 246, .45); color: #D8CCFF; }
 .message.is-hiding { opacity: 0; transform: translateY(-6px); }
 

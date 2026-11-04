@@ -7,6 +7,7 @@ from django.utils import timezone
 from .models import MAX_CHOICES, MIN_CHOICES, Category
 
 MIN_LEAD = 60  # saniye: kapanış en az 1 dakika sonra olmalı
+MAX_LEAD_DAYS = 366  # kapanış en fazla yaklaşık 1 yıl sonra olabilir (hiç sonuçlanmayacak sorular listeyi doldurmasın)
 
 
 def parse_closing(local_value, utc_value):
@@ -83,6 +84,8 @@ class QuestionForm(forms.Form):
                 self.add_error("closes_at", "Geçerli bir tarih ve saat gir.")
             elif closes_at <= timezone.now() + timedelta(seconds=MIN_LEAD):
                 self.add_error("closes_at", "Kapanış zamanı gelecekte olmalı.")
+            elif closes_at > timezone.now() + timedelta(days=MAX_LEAD_DAYS):
+                self.add_error("closes_at", "Kapanış zamanı en fazla 1 yıl sonrası olabilir.")
             else:
                 cleaned["closes_at"] = closes_at
 

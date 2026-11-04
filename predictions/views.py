@@ -21,7 +21,7 @@ User = get_user_model()
 
 
 def _questions():
-    return Question.objects.select_related("created_by").annotate(prediction_count=Count("predictions"))
+    return Question.objects.select_related("created_by", "correct_choice").annotate(prediction_count=Count("predictions"))
 
 
 def _with_distribution(question, my_choice_id=None):
@@ -88,12 +88,13 @@ def my_predictions(request):
         .select_related("question__created_by", "choice", "question__correct_choice")
         .order_by("-updated_at", "-pk")
     )
-    total_points = sum(p.points_awarded for p in predictions)
-    correct = sum(1 for p in predictions if p.is_correct)
+    stats = predictions.aggregate(  # tüm kayıtları belleğe yüklemeden veritabanında topla
+        total_points=Coalesce(Sum("points_awarded"), 0),
+        correct=Count("pk", filter=Q(is_correct=True)),
+        total=Count("pk"),
+    )
     page = Paginator(predictions, 20).get_page(request.GET.get("sayfa"))
-    return render(request, "predictions/my_predictions.html", {
-        "page": page, "total_points": total_points, "correct": correct, "total": len(predictions),
-    })
+    return render(request, "predictions/my_predictions.html", {"page": page, **stats})
 
 
 @login_required
@@ -168,16 +169,20 @@ def question_edit(request, pk):
     if question.status != Status.OPEN:
         messages.error(request, "Sonuçlanan ya da iptal edilen soru düzenlenemez.")
         return redirect("question_detail", pk=pk)
-    locked = question.predictions.exists()
+    locked = question.has_predictions()
     if request.method == "POST":
         form = QuestionForm(request.POST, lock_core=locked)
         if form.is_valid():
             try:
-                services.update_question(request.user, pk, form.cleaned_data)
+                _, core_applied = services.update_question(request.user, pk, form.cleaned_data)
             except services.ServiceError as exc:
                 form.add_error(None, str(exc))
             else:
-                messages.success(request, "Soru güncellendi.")
+                if locked or core_applied:
+                    messages.success(request, "Soru güncellendi.")
+                else:  # form açıldıktan sonra ilk tahmin geldi: yalnızca açıklama/kategori kaydedildi
+                    messages.warning(request, "Soru tahmin aldığı için başlık, ölçüt, seçenekler ve kapanış zamanı "
+                                              "değiştirilemedi; yalnızca açıklama ve kategori kaydedildi.")
                 return redirect("question_detail", pk=pk)
     else:
         initial = {
@@ -222,7 +227,8 @@ def question_resolve(request, pk):
     ctx = {"question": question, "choices": choices, "total": total, "points": CORRECT_POINTS}
     if request.method == "POST":
         form = ResolveForm(request.POST)
-        valid_choice = question.choices.filter(pk=request.POST.get("choice", "")).first() if request.POST.get("choice", "").isdigit() else None
+        choice_pk = services.as_pk(request.POST.get("choice", ""))
+        valid_choice = question.choices.filter(pk=choice_pk).first() if choice_pk is not None else None
         if form.is_valid() and valid_choice:
             if request.POST.get("confirm") == "1":
                 try:

@@ -38,6 +38,15 @@ def _db_rules():
         raise
 
 
+def as_pk(value):
+    """Formdan gelen kimliği güvenle tamsayıya çevirir; geçersizse None. `str.isdigit()` '²' gibi karakterlere
+    True döner ama `int('²')` hata verir (500). Yalnızca ASCII rakamlar ve makul uzunluk kabul edilir."""
+    text = str(value)
+    if text.isascii() and text.isdigit() and len(text) <= 18:
+        return int(text)
+    return None
+
+
 def _lock(pk):
     return Question.objects.select_for_update().get(pk=pk)
 
@@ -53,7 +62,7 @@ def make_prediction(user, question_pk, choice_pk):
             raise ServiceError("Bu soru artık tahmine açık değil.")
         if question.closes_at <= timezone.now():
             raise ServiceError("Bu sorunun tahmin süresi doldu.")
-        choice = question.choices.filter(pk=choice_pk).first() if str(choice_pk).isdigit() else None
+        choice = question.choices.filter(pk=as_pk(choice_pk)).first() if as_pk(choice_pk) is not None else None
         if choice is None:
             raise ServiceError("Geçersiz seçenek.")
 
@@ -95,7 +104,10 @@ def create_question(user, data):
 
 
 def update_question(user, question_pk, data):
-    """İlk tahmine kadar her alan; sonrasında yalnızca açıklama ve kategori değişir."""
+    """İlk tahmine kadar her alan; sonrasında yalnızca açıklama ve kategori değişir.
+
+    (question, core_applied) döner. core_applied=False: soru bu sırada tahmin aldığı için başlık, ölçüt, seçenekler ve
+    kapanış DEĞİŞMEDİ (yalnızca açıklama/kategori kaydedildi); çağıran bunu kullanıcıya söylemelidir."""
     with _db_rules(), transaction.atomic():
         question = _lock(question_pk)
         if question.created_by_id != user.pk:
@@ -107,7 +119,9 @@ def update_question(user, question_pk, data):
         question.category = data["category"]
         fields = ["description", "category"]
 
-        if not question.predictions.exists():
+        # Kilitli formdan gelen veride çekirdek alanlar yoktur; o durumda da (ve tahmin varsa) uygulanmaz.
+        core_applied = "choices" in data and not question.predictions.exists()
+        if core_applied:
             question.title = data["title"]
             question.resolution_criteria = data["resolution_criteria"]
             question.closes_at = data["closes_at"]
@@ -118,7 +132,7 @@ def update_question(user, question_pk, data):
                 for i, text in enumerate(data["choices"], start=1)
             )
         question.save(update_fields=fields)
-        return question
+        return question, core_applied
 
 
 def delete_question(user, question_pk):
@@ -152,7 +166,7 @@ def resolve_question(user, question_pk, choice_pk, note, source_url=""):
         now = timezone.now()
         if question.closes_at > now:
             raise ServiceError("Sonuç, tahmin süresi dolduktan sonra belirlenebilir.")
-        choice = question.choices.filter(pk=choice_pk).first() if str(choice_pk).isdigit() else None
+        choice = question.choices.filter(pk=as_pk(choice_pk)).first() if as_pk(choice_pk) is not None else None
         if choice is None:
             raise ServiceError("Doğru seçeneği seçmelisin.")
 

@@ -817,3 +817,147 @@ class ServerTimeTests(TestCase):
     def test_open_question_marks_reload_time_in_utc(self):
         q = make_question(make_user("sahip"))
         self.assertRegex(self.client.get(f"/soru/{q.pk}/").content.decode(), r'data-reload-at="\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z"')
+
+
+# ============================================================================ düşük öncelikli düzeltmeler
+class SafePrimaryKeyTests(TestCase):
+    """#6: '²' gibi Unicode rakamlar 500 vermemeli (str.isdigit() onları rakam sayıyordu)."""
+
+    def test_as_pk(self):
+        self.assertEqual(services.as_pk("12"), 12)
+        self.assertEqual(services.as_pk(7), 7)
+        for bad in ["²", "①", "", " 1", "1 ", "-1", "1.5", "abc", "9" * 40, None]:
+            self.assertIsNone(services.as_pk(bad), repr(bad))
+
+    def test_predict_with_weird_digits_is_rejected_not_500(self):
+        owner, u = make_user("sahip"), make_user("ali")
+        q = make_question(owner)
+        self.client.force_login(u)
+        for bad in ["²", "①", "9" * 40]:
+            r = self.client.post(reverse("predict", args=[q.pk]), {"choice": bad})
+            self.assertEqual(r.status_code, 302, bad)
+        self.assertEqual(Prediction.objects.count(), 0)
+
+    def test_resolve_with_weird_digits_shows_form_error_not_500(self):
+        owner = make_user("sahip")
+        q = close(make_question(owner))
+        self.client.force_login(owner)
+        r = self.client.post(reverse("question_resolve", args=[q.pk]), {"choice": "²", "note": "Açıklama yazıldı"})
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Doğru seçeneği seçmelisin.")
+        q.refresh_from_db()
+        self.assertEqual(q.status, Status.OPEN)
+
+
+class QueryCountTests(TestCase):
+    """#7 ve #11: sorgu sayısı kart / tahmin sayısıyla artmamalı."""
+
+    def count_queries(self, url):
+        from django.test.utils import CaptureQueriesContext
+        with CaptureQueriesContext(connection) as ctx:
+            self.assertEqual(self.client.get(url).status_code, 200)
+        return len(ctx)
+
+    def test_finished_tab_query_count_does_not_grow_with_cards(self):
+        owner = make_user("sahip")
+        def finish(n):
+            q = close(make_question(owner, title=f"Biten {n}"))
+            services.resolve_question(owner, q.pk, q.choices.first().pk, "Sonuç açıklandı")
+        finish(0)
+        one = self.count_queries("/?sekme=sonuclanan")
+        for n in range(1, 8):
+            finish(n)
+        # günlük sınır servis katmanında değil (resolve) olduğundan 8 çözülmüş soru sorunsuz oluşur
+        many = self.count_queries("/?sekme=sonuclanan")
+        self.assertEqual(one, many)
+
+    def test_my_predictions_totals_are_aggregated_and_query_count_is_constant(self):
+        owner, u = make_user("sahip"), make_user("ali")
+        questions = []
+        for n in range(6):
+            q = make_question(owner, title=f"S{n}")
+            Prediction.objects.create(question=q, choice=q.choices.first(), user=u)
+            questions.append(q)
+        self.client.force_login(u)
+        few = self.count_queries("/tahminlerim/")
+        for q in questions[:4]:
+            close(q)
+            services.resolve_question(owner, q.pk, q.choices.first().pk, "Sonuç açıklandı")
+        r = self.client.get("/tahminlerim/")
+        self.assertEqual((r.context["total_points"], r.context["correct"], r.context["total"]), (40, 4, 6))
+        self.assertEqual(few, self.count_queries("/tahminlerim/"))
+
+
+class ClosingUpperBoundTests(TestCase):
+    """#8: kapanış en fazla ~1 yıl sonrası olabilir."""
+
+    def post(self, delta):
+        user = make_user("ayse")
+        self.client.force_login(user)
+        value = (timezone.localtime() + delta).strftime("%Y-%m-%dT%H:%M")
+        return self.client.post("/soru/yeni/", {"title": "Uzak", "resolution_criteria": "x", "category": "diger",
+                                                "closes_at": value, "choice_1": "A", "choice_2": "B"})
+
+    def test_far_future_rejected(self):
+        r = self.post(timedelta(days=800))
+        self.assertContains(r, "en fazla 1 yıl")
+        self.assertEqual(Question.objects.count(), 0)
+
+    def test_within_a_year_accepted(self):
+        self.assertEqual(self.post(timedelta(days=300)).status_code, 302)
+        self.assertEqual(Question.objects.count(), 1)
+
+
+class UsernameMessageTests(TestCase):
+    """#9: Türkçe harf neden reddedildiği açıkça söylenir."""
+
+    def test_message_mentions_turkish_characters(self):
+        r = self.client.post("/kayit/", {"username": "şeker", "email": "s@example.com",
+                                         "password1": PASSWORD, "password2": PASSWORD})
+        self.assertContains(r, "Türkçe karakter olmaz")
+        self.assertEqual(User.objects.count(), 0)
+
+    def test_help_text_and_valid_names_still_work(self):
+        self.assertContains(self.client.get("/kayit/"), "Türkçe karakter olmaz")
+        r = self.client.post("/kayit/", {"username": "seker_01", "email": "s@example.com",
+                                         "password1": PASSWORD, "password2": PASSWORD})
+        self.assertEqual(r.status_code, 302)
+
+
+class EditRaceTests(TestCase):
+    """#10: form açıldıktan sonra ilk tahmin gelirse kullanıcı yarım kaydı sessizce görmemeli."""
+
+    def test_user_is_warned_when_core_fields_were_not_saved(self):
+        from unittest import mock
+        owner = make_user("sahip")
+        q = make_question(owner)
+        Prediction.objects.create(question=q, choice=q.choices.first(), user=make_user("ali"))  # yarış: tahmin geldi
+        self.client.force_login(owner)
+        data = {"title": "Yeni başlık", "description": "Yeni açıklama", "resolution_criteria": "Yeni ölçüt", "category": "teknoloji",
+                "closes_at": (timezone.localtime() + timedelta(days=5)).strftime("%Y-%m-%dT%H:%M"), "choice_1": "X", "choice_2": "Y"}
+        # Görünüm formu açarken "tahmin yok" sanıyor (yarışı benzetir); servis ise gerçek durumu görür.
+        with mock.patch.object(Question, "has_predictions", return_value=False):
+            r = self.client.post(reverse("question_edit", args=[q.pk]), data, follow=True)
+        self.assertContains(r, "değiştirilemedi; yalnızca açıklama ve kategori kaydedildi")
+        self.assertNotContains(r, "Soru güncellendi.")
+        q.refresh_from_db()
+        self.assertEqual(q.title, "Maç kim kazanır?")
+        self.assertEqual(q.description, "Yeni açıklama")
+
+    def test_service_reports_whether_core_was_applied(self):
+        owner = make_user("sahip")
+        q = make_question(owner)
+        data = {"title": "T", "description": "D", "resolution_criteria": "C", "category": "diger",
+                "closes_at": timezone.now() + timedelta(days=3), "choices": ["1", "2"]}
+        self.assertTrue(services.update_question(owner, q.pk, data)[1])
+        Prediction.objects.create(question=q, choice=q.choices.first(), user=make_user("ali"))
+        self.assertFalse(services.update_question(owner, q.pk, data)[1])
+        self.assertFalse(services.update_question(owner, q.pk, {"description": "x", "category": "diger"})[1])  # kilitli form verisi
+
+    def test_normal_edit_still_says_updated(self):
+        owner = make_user("sahip")
+        q = make_question(owner)
+        self.client.force_login(owner)
+        data = {"title": "Yeni", "description": "", "resolution_criteria": "Ölçüt", "category": "diger",
+                "closes_at": (timezone.localtime() + timedelta(days=5)).strftime("%Y-%m-%dT%H:%M"), "choice_1": "X", "choice_2": "Y"}
+        self.assertContains(self.client.post(reverse("question_edit", args=[q.pk]), data, follow=True), "Soru güncellendi.")

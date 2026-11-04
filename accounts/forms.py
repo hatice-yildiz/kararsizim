@@ -3,7 +3,13 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.password_validation import validate_password
 
-from .models import username_validator
+from django.core.validators import RegexValidator
+
+# Aynı kural modeldeki doğrulayıcıyla; yalnızca mesaj açık (Türkçe karakter yok). Model değişmediği için migration gerekmez.
+username_form_validator = RegexValidator(
+    regex=r"^[A-Za-z0-9_.]{3,20}$",
+    message="Kullanıcı adı yalnızca İngilizce harf (a-z, A-Z; ş, ğ, ı gibi Türkçe karakter olmaz), rakam, alt çizgi ve nokta içerebilir.",
+)
 
 User = get_user_model()
 
@@ -13,8 +19,8 @@ class RegisterForm(forms.Form):
         label="Kullanıcı adı",
         min_length=3,
         max_length=20,
-        validators=[username_validator],
-        help_text="3-20 karakter; harf, rakam, alt çizgi ve nokta.",
+        validators=[username_form_validator],
+        help_text="3-20 karakter; İngilizce harf (Türkçe karakter olmaz), rakam, alt çizgi ve nokta.",
         error_messages={
             "required": "Kullanıcı adı zorunludur.",
             "min_length": "Kullanıcı adı en az 3 karakter olmalı.",

@@ -1,5 +1,8 @@
 import os
+import sys
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 import dj_database_url
 from dotenv import load_dotenv
@@ -8,11 +11,31 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-insecure-key-change-me")
-DEBUG = os.environ.get("DEBUG", "True").lower() in ("1", "true", "yes")
+# Güvenli varsayılan: DEBUG yalnızca .env / ortam değişkeninde açıkça True verilirse açılır.
+DEBUG = os.environ.get("DEBUG", "False").lower() in ("1", "true", "yes")
 
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    if DEBUG or (len(sys.argv) > 1 and sys.argv[1] == "test"):
+        SECRET_KEY = "dev-insecure-key-change-me"
+    else:
+        raise ImproperlyConfigured("SECRET_KEY ortam değişkeni tanımlı olmalı (DEBUG kapalıyken).")
+
+
+def _csv(name, default=""):
+    return [v.strip() for v in os.environ.get(name, default).split(",") if v.strip()]
+
+
+ALLOWED_HOSTS = _csv("ALLOWED_HOSTS", "localhost,127.0.0.1")
+CSRF_TRUSTED_ORIGINS = _csv("CSRF_TRUSTED_ORIGINS")
+
+# Vercel'in sistem ortam değişkenlerinden (üretim alan adı, deployment ve dal adresleri)
+# tam alan adlarını ekle; böylece joker (*.vercel.app) kullanmaya gerek kalmaz.
+for _var in ("VERCEL_PROJECT_PRODUCTION_URL", "VERCEL_URL", "VERCEL_BRANCH_URL"):
+    _host = os.environ.get(_var)
+    if _host:
+        ALLOWED_HOSTS.append(_host)
+        CSRF_TRUSTED_ORIGINS.append(f"https://{_host}")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -68,6 +91,8 @@ if DATABASE_URL:
     }
     # Supabase transaction pooler (port 6543) server-side cursor desteklemez
     DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+    # psycopg3 hazır sorguları (prepared statements) pooler'ın transaction modunda sorun çıkarır
+    DATABASES["default"].setdefault("OPTIONS", {})["prepare_threshold"] = None
 else:
     DATABASES = {
         "default": {
@@ -94,10 +119,8 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
-}
+# Vercel, STATIC_ROOT tanımlıysa build sırasında collectstatic'i kendisi çalıştırır ve
+# dosyaları CDN'den sunar (WhiteNoise yalnızca yerelde devrede). Varsayılan depolama desteklenir.
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

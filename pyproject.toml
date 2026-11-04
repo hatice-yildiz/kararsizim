@@ -2,4 +2,14 @@
 name = "kararsizim"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = []
+# Not: requirements.txt ile aynı tutulmalı (Vercel pyproject.toml'u okuyabilir).
+dependencies = [
+    "Django>=5.2,<6.0",
+    "psycopg[binary]",
+    "dj-database-url",
+    "python-dotenv",
+    "whitenoise",
+]
+
+[tool.vercel]
+entrypoint = "config.wsgi:application"

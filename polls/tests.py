@@ -339,3 +339,43 @@ class DesignSmokeTests(TestCase):
         u = User.objects.create_user(username="ali", email="a@example.com", password="p")
         accents = {make_poll(u, question=str(i)).accent for i in range(10)}
         self.assertEqual(accents, {1, 2, 3, 4, 5})
+
+
+from unittest import mock
+
+from django.db import connection
+
+
+class EnableRlsMigrationTests(TestCase):
+    def load(self):
+        import importlib
+        return importlib.import_module("polls.migrations.0003_enable_rls")
+
+    def fake_editor(self, vendor):
+        editor = mock.Mock()
+        editor.connection.vendor = vendor
+        editor.connection.introspection.table_names.return_value = ["accounts_user", "polls_poll"]
+        editor.quote_name.side_effect = lambda n: f'"{n}"'
+        return editor
+
+    def test_postgres_enables_rls_on_every_table_without_policies(self):
+        editor = self.fake_editor("postgresql")
+        self.load().enable_rls(None, editor)
+        sql = [c.args[0] for c in editor.execute.call_args_list]
+        self.assertEqual(sql, [
+            'ALTER TABLE "accounts_user" ENABLE ROW LEVEL SECURITY',
+            'ALTER TABLE "polls_poll" ENABLE ROW LEVEL SECURITY',
+        ])
+
+    def test_reverse_disables_rls(self):
+        editor = self.fake_editor("postgresql")
+        self.load().disable_rls(None, editor)
+        self.assertTrue(all("DISABLE ROW LEVEL SECURITY" in c.args[0] for c in editor.execute.call_args_list))
+
+    def test_sqlite_is_noop(self):
+        editor = self.fake_editor("sqlite")
+        self.load().enable_rls(None, editor)
+        editor.execute.assert_not_called()
+
+    def test_runs_on_current_test_database(self):
+        self.assertEqual(connection.vendor, "sqlite")  # testler SQLite ile çalışır; migration no-op geçti

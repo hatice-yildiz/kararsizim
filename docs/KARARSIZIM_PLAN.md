@@ -155,7 +155,8 @@ Projenin **en başında** tanımlanmalı (`AUTH_USER_MODEL = "accounts.User"`), 
 - **Detay sayfası:**
   - Kullanıcı henüz oy vermediyse → seçenekler büyük, tıklanabilir renkli butonlar olarak gösterilir. Seçince form gönderilir.
   - Oy verdiyse → sonuçlar: her seçenek için yüzde ve oy sayısı, renkli ilerleme çubuğu; kullanıcının seçtiği işaretli; en çok oy alan vurgulu.
-  - "Oy vermeden sonuçları gör" bağlantısı (`?sonuclar=1`).
+  - ~~"Oy vermeden sonuçları gör" bağlantısı (`?sonuclar=1`)~~ — **kaldırıldı** (kullanıcı kararı): sonuçlar yalnızca oy verdikten sonra görünür.
+  - Sayfanın üstünde "← Tüm anketler" geri bağlantısı bulunur.
   - Anket sahibine "Sil" butonu görünür.
 - **Oy sonrası:** detay sayfasına yönlendir + Django `messages` ile "Oyun kaydedildi!" bildirimi. Tekrar oy denemesinde "Bu ankete zaten oy verdin." mesajı.
 - **Kayıt sonrası:** otomatik giriş yap, ana sayfaya yönlendir.

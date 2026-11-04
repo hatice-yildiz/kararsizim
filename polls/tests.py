@@ -230,17 +230,27 @@ class VotingTests(TestCase):
         self.assertContains(r, "oylamaya kapalı")
         self.assertEqual(Vote.objects.count(), 0)
 
-    def test_detail_shows_vote_buttons_before_voting(self):
+    def test_detail_shows_vote_buttons_and_no_results_link_before_voting(self):
         r = self.client.get(self.detail_url)
         self.assertContains(r, 'name="option"')
-        self.assertContains(r, "Oy vermeden sonuçları gör")
+        self.assertNotContains(r, "Oy vermeden sonuçları gör")
         self.assertNotContains(r, "Toplam")
+        self.assertContains(r, "Tüm anketler")
 
-    def test_results_percentages_and_counts(self):
+    def test_results_hidden_without_voting_even_with_old_query_param(self):
         from django.test import Client
-        for opt in (self.a, self.a, self.b):
-            self.vote(Client(), opt)
+        self.vote(Client(), self.a)
         r = self.client.get(self.detail_url + "?sonuclar=1")
+        self.assertContains(r, 'name="option"')
+        self.assertNotContains(r, "Toplam")
+        self.assertFalse(r.context["show_results"])
+
+    def test_results_percentages_and_counts_after_voting(self):
+        from django.test import Client
+        for opt in (self.a, self.b):
+            self.vote(Client(), opt)
+        self.vote(self.client, self.a)
+        r = self.client.get(self.detail_url)
         by_text = {o.text: o for o in r.context["options"]}
         self.assertEqual((by_text["A"].vote_count, by_text["A"].percent), (2, 67))
         self.assertEqual((by_text["B"].vote_count, by_text["B"].percent), (1, 33))
@@ -249,12 +259,12 @@ class VotingTests(TestCase):
         self.assertFalse(by_text["B"].is_leader)
         self.assertEqual(r.context["total_votes"], 3)
         self.assertContains(r, "Toplam 3 oy")
-        self.assertNotContains(r, "Senin seçimin")
 
-    def test_results_with_zero_votes_have_no_leader_and_no_division_error(self):
-        r = self.client.get(self.detail_url + "?sonuclar=1")
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(all(o.percent == 0 and not o.is_leader for o in r.context["options"]))
+    def test_build_results_with_zero_votes_has_no_leader_and_no_division_error(self):
+        from .views import build_results
+        options, total = build_results(self.poll)
+        self.assertEqual(total, 0)
+        self.assertTrue(all(o.percent == 0 and not o.is_leader for o in options))
 
     def test_voter_sees_results_with_own_choice_marked(self):
         self.vote(self.client, self.b)

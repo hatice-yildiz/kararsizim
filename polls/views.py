@@ -41,7 +41,7 @@ def build_results(poll, user_option_id=None):
 def poll_detail(request, pk):
     poll = get_object_or_404(Poll.objects.select_related("created_by"), pk=pk)
     my_vote = Vote.objects.filter(poll=poll, voter_key=get_voter_key(request)).first()
-    show_results = my_vote is not None or request.GET.get("sonuclar") == "1"
+    show_results = my_vote is not None  # sonuçlar yalnızca oy verdikten sonra görünür
     context = {"poll": poll, "is_owner": request.user == poll.created_by, "has_voted": my_vote is not None}
     if show_results:
         options, total = build_results(poll, my_vote.option_id if my_vote else None)

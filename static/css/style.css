@@ -155,7 +155,8 @@ button.option:hover { transform: translateY(-2px); filter: brightness(.96); box-
 .option.option-c3 { background: var(--c3-tint); border-color: var(--c3); }
 .option.option-c4 { background: var(--c4-tint); border-color: var(--c4); }
 .option.option-c5 { background: var(--c5-tint); border-color: var(--c5); }
-.see-results { display: inline-block; margin: 8px 0 4px; font-weight: 600; font-size: .95rem; }
+.back-link { display: inline-block; margin-top: 20px; font-weight: 600; font-size: .95rem; text-decoration: none; }
+.back-link:hover { text-decoration: underline; }
 .card-actions { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
 
 /* ---------- Sonuçlar ---------- */

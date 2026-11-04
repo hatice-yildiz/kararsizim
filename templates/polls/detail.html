@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ poll.question }} · Kararsızım{% endblock %}
 {% block content %}
+  <a class="back-link" href="{% url 'home' %}">← Tüm anketler</a>
   <article class="card strip-c{{ poll.accent }}">
     <h1>{{ poll.question }}</h1>
     <p class="meta"><strong>@{{ poll.created_by.username }}</strong> · {{ poll.created_at|timesince }} önce</p>
@@ -26,7 +27,6 @@
           <button type="submit" name="option" value="{{ option.pk }}" class="option option-c{{ forloop.counter }}">{{ option.text }}</button>
         {% endfor %}
       </form>
-      <a class="see-results" href="?sonuclar=1">Oy vermeden sonuçları gör</a>
     {% endif %}
 
     {% if is_owner %}

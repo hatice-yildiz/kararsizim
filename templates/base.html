@@ -15,6 +15,7 @@
     <div class="container navbar-inner">
       <a href="/" class="logo">Kararsızım 🤔</a>
       <nav class="nav-links">
+        <a href="{% url 'popular' %}">Popüler</a>
         {% if user.is_authenticated %}
           <a href="/anket/yeni/" class="btn btn-primary btn-sm">Anket Oluştur</a>
           <a href="/anketlerim/">Anketlerim</a>

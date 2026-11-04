@@ -7,6 +7,7 @@ from polls import views as poll_views
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", poll_views.home, name="home"),
+    path("populer/", poll_views.popular, name="popular"),
     path("anket/yeni/", poll_views.poll_create, name="poll_create"),
     path("anket/<int:pk>/", poll_views.poll_detail, name="poll_detail"),
     path("anket/<int:pk>/oy/", poll_views.poll_vote, name="poll_vote"),

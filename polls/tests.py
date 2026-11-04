@@ -389,3 +389,50 @@ class EnableRlsMigrationTests(TestCase):
 
     def test_runs_on_current_test_database(self):
         self.assertEqual(connection.vendor, "sqlite")  # testler SQLite ile çalışır; migration no-op geçti
+
+
+class PopularPageTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="sahip", email="sahip@example.com", password="p")
+
+    def add_votes(self, poll, count):
+        opt = poll.options.first()
+        for i in range(count):
+            Vote.objects.create(poll=poll, option=opt, voter_key=f"a:{poll.pk}-{i}")
+
+    def test_ordered_by_votes_and_excludes_unvoted(self):
+        few = make_poll(self.user, question="Az oy")
+        many = make_poll(self.user, question="Çok oy")
+        make_poll(self.user, question="Oysuz")
+        self.add_votes(few, 1)
+        self.add_votes(many, 3)
+        r = self.client.get("/populer/")
+        self.assertEqual([p.question for p in r.context["page"]], ["Çok oy", "Az oy"])
+        self.assertNotContains(r, "Oysuz")
+        self.assertContains(r, "#1")
+        self.assertContains(r, "#2")
+
+    def test_ties_newest_first(self):
+        old = make_poll(self.user, question="Eski")
+        new = make_poll(self.user, question="Yeni")
+        self.add_votes(old, 2)
+        self.add_votes(new, 2)
+        r = self.client.get("/populer/")
+        self.assertEqual([p.question for p in r.context["page"]], ["Yeni", "Eski"])
+
+    def test_empty_state(self):
+        make_poll(self.user)
+        self.assertContains(self.client.get("/populer/"), "Henüz oy alan anket yok")
+
+    def test_pagination_ranks_continue_on_page_two(self):
+        for i in range(11):
+            self.add_votes(make_poll(self.user, question=f"Soru {i}"), 11 - i)
+        r = self.client.get("/populer/?sayfa=2")
+        self.assertEqual(len(r.context["page"]), 1)
+        self.assertContains(r, "#11")
+
+    def test_public_and_linked_from_navbar(self):
+        self.assertContains(self.client.get("/"), 'href="/populer/"')
+        self.client.force_login(self.user)
+        self.assertContains(self.client.get("/"), 'href="/populer/"')
+        self.assertEqual(self.client.get("/populer/").status_code, 200)

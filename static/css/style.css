@@ -105,6 +105,7 @@ a.card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); col
 .card h1 { margin-top: 0; }
 .meta { color: var(--text-muted); margin: 6px 0 0; font-size: .875rem; }
 .meta strong { color: var(--text); font-weight: 600; }
+.rank { display: inline-block; min-width: 2.2em; margin-right: 4px; padding: 1px 8px; border-radius: 999px; background: var(--primary-tint); color: var(--primary-dark); font-size: .8rem; font-weight: 800; text-align: center; vertical-align: middle; }
 .description { margin: 12px 0 4px; color: var(--text); }
 
 .page-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }

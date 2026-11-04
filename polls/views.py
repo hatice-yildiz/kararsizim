@@ -38,6 +38,13 @@ def build_results(poll, user_option_id=None):
     return options, total
 
 
+def popular(request):
+    """En çok oy alan anketler (en az 1 oy), eşitlikte en yeni üstte."""
+    polls = _poll_queryset().filter(total_votes__gt=0).order_by("-total_votes", "-created_at", "-pk")
+    page = Paginator(polls, 10).get_page(request.GET.get("sayfa"))
+    return render(request, "polls/popular.html", {"page": page})
+
+
 def poll_detail(request, pk):
     poll = get_object_or_404(Poll.objects.select_related("created_by"), pk=pk)
     my_vote = Vote.objects.filter(poll=poll, voter_key=get_voter_key(request)).first()

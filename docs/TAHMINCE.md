@@ -33,8 +33,9 @@ Puanlar yalnızca eğlence içindir; para, bahis, ödeme veya ödül sistemi yok
 | Düzenle / sil / sonuç / iptal | ✘ | ✘ başkasının sorusunda (404) | ✔ (kurallar dahilinde) |
 
 ## Eski veriler
-`accounts` (kullanıcılar) ve `polls` (anketler, seçenekler, oylar) tabloları ve verileri **silinmedi, sıfırlanmadı**.
-Eski anketler `/eski-anketler/` altında salt okunurdur; oylarından puan üretilmez. Eski adresler (`/anket/<id>/`, `/anketlerim/`, `/populer/`) yeni yerlerine yönlenir.
+`accounts` (kullanıcılar) tablosu ve verileri **silinmedi**. Eski "Kararsızım" anketleri, seçenekleri ve oyları kullanıcının
+isteğiyle üretimden **kalıcı olarak silindi** ve ilgili sayfalar/yönlendirmeler kaldırıldı. `polls` uygulaması yalnızca
+migration zinciri için boş tablolarla duruyor. Eski anketlerden hiçbir zaman puan üretilmedi.
 
 ## Sayfalar
-`/` (sekmeler + kategori) · `/soru/<id>/` · `/soru/yeni/` · `/tahminlerim/` · `/sorularim/` · `/puan-tablosu/` · `/eski-anketler/` · `/giris/` `/kayit/`
+`/` (sekmeler + kategori) · `/soru/<id>/` · `/soru/yeni/` · `/tahminlerim/` · `/sorularim/` · `/puan-tablosu/` · `/giris/` `/kayit/`

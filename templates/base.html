@@ -27,7 +27,6 @@
           <a href="{% url 'my_predictions' %}">Tahminlerim</a>
           <a href="{% url 'my_questions' %}">Sorularım</a>
         {% endif %}
-        <a href="{% url 'legacy_list' %}">Eski Anketler</a>
       </nav>
       <div class="nav-actions">
         {% if user.is_authenticated %}

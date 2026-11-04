@@ -1,9 +1,7 @@
 from django.contrib import admin
 from django.urls import path
-from django.views.generic import RedirectView
 
 from accounts import views as account_views
-from polls import views as poll_views
 from predictions import views as v
 
 admin.site.site_header = "Tahmince Yönetim"
@@ -23,14 +21,6 @@ urlpatterns = [
     path("tahminlerim/", v.my_predictions, name="my_predictions"),
     path("sorularim/", v.my_questions, name="my_questions"),
     path("puan-tablosu/", v.leaderboard, name="leaderboard"),
-    # Eski anketler (salt okunur arşiv)
-    path("eski-anketler/", poll_views.legacy_list, name="legacy_list"),
-    path("eski-anketler/<int:pk>/", poll_views.legacy_detail, name="legacy_detail"),
-    # Eski adresler yeni yerlerine yönlenir
-    path("anket/<int:pk>/", RedirectView.as_view(pattern_name="legacy_detail"), name="old_poll_detail"),
-    path("anket/yeni/", RedirectView.as_view(pattern_name="question_create")),
-    path("anketlerim/", RedirectView.as_view(pattern_name="my_questions")),
-    path("populer/", RedirectView.as_view(pattern_name="leaderboard")),
     # Üyelik
     path("kayit/", account_views.register, name="register"),
     path("giris/", account_views.GuestLoginView.as_view(), name="login"),

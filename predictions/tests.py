@@ -630,7 +630,7 @@ class PagesTests(TestCase):
 
     def test_email_never_on_public_pages(self):
         for url in ["/", "/?sekme=sonuclanan", f"/soru/{self.done.pk}/", f"/soru/{self.open_q.pk}/", "/puan-tablosu/",
-                    "/giris/", "/kayit/", "/eski-anketler/"]:
+                    "/giris/", "/kayit/"]:
             self.assertNotContains(self.client.get(url), "example.com", msg_prefix=url)
         self.client.force_login(self.u)
         for url in ["/", f"/soru/{self.done.pk}/", "/tahminlerim/", "/sorularim/", "/puan-tablosu/"]:
@@ -656,7 +656,7 @@ class BrandingTests(TestCase):
     def test_name_slogan_metadata_and_no_old_name(self):
         make_user("ali")
         q = make_question(User.objects.get(username="ali"))
-        for url in ["/", f"/soru/{q.pk}/", "/puan-tablosu/", "/giris/", "/kayit/", "/eski-anketler/", "/yok-boyle-sayfa/"]:
+        for url in ["/", f"/soru/{q.pk}/", "/puan-tablosu/", "/giris/", "/kayit/", "/yok-boyle-sayfa/"]:
             r = self.client.get(url)
             html = r.content.decode()
             self.assertIn("Tahmince", html, url)
@@ -675,12 +675,16 @@ class BrandingTests(TestCase):
             self.assertNotIn(word, html.lower())
 
 
-class RedirectTests(TestCase):
-    def test_old_urls_redirect(self):
-        u = make_user("ali")
-        from polls.models import Poll
-        poll = Poll.objects.create(question="Eski", created_by=u)
-        self.assertRedirects(self.client.get(f"/anket/{poll.pk}/"), f"/eski-anketler/{poll.pk}/", fetch_redirect_response=False)
-        self.assertRedirects(self.client.get("/anket/yeni/"), "/soru/yeni/", fetch_redirect_response=False)
-        self.assertRedirects(self.client.get("/anketlerim/"), "/sorularim/", fetch_redirect_response=False)
-        self.assertRedirects(self.client.get("/populer/"), "/puan-tablosu/", fetch_redirect_response=False)
+class RemovedLegacyPollsTests(TestCase):
+    """Eski "Kararsızım" anketleri tamamen kaldırıldı: sayfalar ve eski adresler artık yok."""
+
+    def test_old_pages_and_urls_are_gone(self):
+        for url in ["/eski-anketler/", "/eski-anketler/1/", "/anket/1/", "/anket/yeni/", "/anketlerim/", "/populer/", "/anket/1/oy/"]:
+            self.assertEqual(self.client.get(url).status_code, 404, url)
+
+    def test_navbar_has_no_old_polls_link(self):
+        self.assertNotContains(self.client.get("/"), "Eski Anketler")
+        self.assertNotContains(self.client.get("/"), "eski-anketler")
+
+    def test_no_legacy_voter_cookie(self):
+        self.assertNotIn("voter_id", self.client.get("/").cookies)

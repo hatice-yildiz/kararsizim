@@ -12,7 +12,7 @@ Django 5.2 + Supabase (PostgreSQL) + saf HTML/CSS/JS, Vercel'de çalışır.
 - **Üyeler** 2-4 seçenekli, kategorili ve kapanış zamanlı soru açar. Her soruya tek tahmin yapar, kapanışa kadar değiştirebilir. Kendi sorusuna tahmin yapamaz ve kendi sorusundan puan kazanamaz.
 - **Sonuç:** Yalnızca soruyu açan kişi, yalnızca kapanıştan sonra, onay adımıyla ve bir kez doğru seçeneği bildirir. Belirlenemiyorsa gerekçeyle iptal eder (kimseye puan verilmez).
 - **Durumlar:** Tahmine açık → Sonuç bekliyor (süre doldu) → Sonuçlandı ya da İptal edildi. "Sonuç bekliyor" ayrı saklanmaz, kapanış zamanından türetilir.
-- **Eski anketler:** Tahmince'den önceki anketler silinmedi; salt okunur "Eski Anketler" bölümünde saklanır, puan üretmez.
+- **Eski anketler:** Tahmince'den önceki "Kararsızım" anketleri, seçenekleri ve oyları kaldırıldı (üretimden kalıcı silindi). `polls` uygulaması yalnızca geçmiş migration zinciri için boş tablolarla duruyor.
 - Kullanıcı adı görünür, e-posta hiçbir sayfada görünmez. Giriş e-posta **veya** kullanıcı adıyla yapılır.
 
 ## Güvenlik ve kurallar nerede uygulanır
@@ -70,7 +70,7 @@ DATABASE_URL= .venv/bin/python manage.py migrate && DATABASE_URL= .venv/bin/pyth
 
    Bu, `polls.0003_enable_rls` ve `predictions.0002_db_guards` ile tüm tablolarda Row Level Security'yi açar ve tetikleyicileri kurar. Politika eklenmediği için Supabase'in otomatik REST API'si bu tablolara erişemez; Django `postgres` rolüyle bağlandığı için etkilenmez.
 4. **Yeni bir model/tablo eklediğinde** o tabloda da RLS'i açan bir migration yaz. Eski migration yeni tabloları kapsamaz.
-5. **Mevcut verileri korumak:** `predictions` migration'ları yeni tablolar ekler; `accounts` ve `polls` tablolarına hiç dokunmaz (kullanıcılar, eski anketler ve oylar silinmez ya da sıfırlanmaz).
+5. **Mevcut veriler:** `predictions` migration'ları yeni tablolar ekler; `accounts` (kullanıcılar) tablosuna dokunmaz.
 
 ## Vercel'e yayın
 

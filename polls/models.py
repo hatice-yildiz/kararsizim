@@ -1,3 +1,9 @@
+"""Eski "Kararsızım" anket modelleri (kullanım dışı).
+
+Tahmince'ye geçişte bu anketlerin verileri üretimden kalıcı olarak silindi ve tüm sayfaları kaldırıldı.
+Modeller ve migration'lar yalnızca geçmiş migration zincirinin tutarlı kalması için duruyor; tablolar boştur.
+İleride tamamen kaldırmak için bir `DeleteModel` migration'ı yazılıp uygulama INSTALLED_APPS'ten çıkarılabilir.
+"""
 from django.conf import settings
 from django.db import models
 

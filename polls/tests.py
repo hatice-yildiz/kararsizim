@@ -436,3 +436,51 @@ class PopularPageTests(TestCase):
         self.client.force_login(self.user)
         self.assertContains(self.client.get("/"), 'href="/populer/"')
         self.assertEqual(self.client.get("/populer/").status_code, 200)
+
+
+from django.core.management import call_command
+from io import StringIO
+
+
+class SeedPollsCommandTests(TestCase):
+    def run_cmd(self):
+        out = StringIO()
+        call_command("seed_polls", stdout=out)
+        return out.getvalue()
+
+    def test_creates_valid_polls_owned_by_unloginable_system_account(self):
+        self.run_cmd()
+        system = User.objects.get(username="kararsizim")
+        self.assertFalse(system.has_usable_password())
+        from django.contrib.auth import authenticate
+        self.assertIsNone(authenticate(username="kararsizim", password=""))
+        self.assertIsNone(authenticate(username="sistem@kararsizim.invalid", password="x"))
+        polls = Poll.objects.all()
+        self.assertGreaterEqual(polls.count(), 8)
+        for poll in polls:
+            self.assertEqual(poll.created_by, system)
+            texts = [o.text.strip().casefold() for o in poll.options.all()]
+            self.assertTrue(2 <= len(texts) <= 5, poll.question)
+            self.assertEqual(len(texts), len(set(texts)), poll.question)
+            self.assertEqual([o.order for o in poll.options.all()], list(range(1, len(texts) + 1)))
+
+    def test_is_idempotent(self):
+        self.run_cmd()
+        count = Poll.objects.count()
+        out = self.run_cmd()
+        self.assertEqual(Poll.objects.count(), count)
+        self.assertIn("0 örnek anket eklendi", out)
+        self.assertEqual(User.objects.filter(username="kararsizim").count(), 1)
+
+    def test_seeded_polls_visible_to_guests_without_votes_or_fake_data(self):
+        self.run_cmd()
+        r = self.client.get("/")
+        self.assertContains(r, "@kararsizim")
+        self.assertContains(r, "Çay mı kahve mi?")
+        self.assertEqual(Vote.objects.count(), 0)
+
+    def test_username_is_reserved_for_registration(self):
+        self.run_cmd()
+        r = self.client.post("/kayit/", {"username": "Kararsizim", "email": "x@example.com",
+                                         "password1": "GucluSifre#2026", "password2": "GucluSifre#2026"})
+        self.assertContains(r, "Bu kullanıcı adı zaten alınmış.")

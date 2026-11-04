@@ -93,7 +93,7 @@ Projenin **en başında** tanımlanmalı (`AUTH_USER_MODEL = "accounts.User"`), 
 - `email`: `EmailField(unique=True)` — zorunlu, büyük/küçük harf duyarsız benzersiz olmalı (kaydetmeden önce küçük harfe çevir).
 - `username`: zorunlu, benzersiz. Kurallar: 3–20 karakter, yalnızca harf, rakam, alt çizgi ve nokta. Büyük/küçük harf duyarsız benzersizlik kontrolü yapılmalı.
 - `first_name`, `last_name` kullanılmayacak (formda gösterilmez).
-- **Giriş e-posta + parola ile** yapılır (özel authentication backend veya `USERNAME_FIELD = "email"` + `REQUIRED_FIELDS = ["username"]`).
+- **Giriş e-posta _veya_ kullanıcı adı + parola ile** yapılır (özel authentication backend; `@` içeren değer e-posta, diğeri kullanıcı adı sayılır). *(Kullanıcı kararıyla genişletildi: ilk plan yalnızca e-postaydı.)*
 
 ### 5.2 `polls.Poll`
 | Alan | Tip | Not |
@@ -147,7 +147,7 @@ Projenin **en başında** tanımlanmalı (`AUTH_USER_MODEL = "accounts.User"`), 
 | `/anket/<id>/sil/` | Anketi sil (onay sayfası + POST) | Yalnızca anket sahibi |
 | `/anketlerim/` | Kullanıcının kendi anketleri | Yalnızca üyeler |
 | `/kayit/` | Kayıt: kullanıcı adı, e-posta, parola, parola tekrar | Misafirler |
-| `/giris/` | Giriş: e-posta + parola | Misafirler |
+| `/giris/` | Giriş: e-posta veya kullanıcı adı + parola | Misafirler |
 | `/cikis/` | Çıkış (yalnızca POST) | Üyeler |
 
 ### Davranış detayları
@@ -315,7 +315,7 @@ Prototip tamamlandıktan sonra sırayla değerlendirilecek fikirler:
 - [ ] Misafir tüm anketleri görebiliyor ve oy verebiliyor
 - [ ] Misafir anket oluşturmaya çalışınca giriş sayfasına yönlendiriliyor
 - [ ] Kayıt: kullanıcı adı + e-posta + parola; e-posta ve kullanıcı adı benzersiz
-- [ ] Giriş e-posta + parola ile yapılıyor
+- [ ] Giriş e-posta veya kullanıcı adı + parola ile yapılıyor
 - [ ] Anketlerde kullanıcı adı görünüyor, e-posta hiçbir yerde görünmüyor
 - [ ] Anket en az 2, en fazla 5 seçenekle oluşturulabiliyor
 - [ ] Aynı kişi aynı ankete ikinci kez oy veremiyor

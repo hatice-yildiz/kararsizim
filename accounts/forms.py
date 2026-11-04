@@ -74,10 +74,13 @@ class RegisterForm(forms.Form):
 
 
 class EmailLoginForm(AuthenticationForm):
-    username = forms.EmailField(
-        label="E-posta",
-        widget=forms.EmailInput(attrs={"autofocus": True, "autocomplete": "email"}),
-        error_messages={"required": "E-posta zorunludur.", "invalid": "Geçerli bir e-posta adresi gir."},
+    """E-posta ya da kullanıcı adı + parola ile giriş formu."""
+
+    username = forms.CharField(
+        label="E-posta veya kullanıcı adı",
+        max_length=254,
+        widget=forms.TextInput(attrs={"autofocus": True, "autocomplete": "username"}),
+        error_messages={"required": "E-posta veya kullanıcı adı zorunludur."},
     )
     password = forms.CharField(
         label="Parola",
@@ -85,6 +88,6 @@ class EmailLoginForm(AuthenticationForm):
         error_messages={"required": "Parola zorunludur."},
     )
     error_messages = {
-        "invalid_login": "E-posta veya parola hatalı.",
+        "invalid_login": "E-posta/kullanıcı adı veya parola hatalı.",
         "inactive": "Bu hesap devre dışı.",
     }

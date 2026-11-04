@@ -79,14 +79,33 @@ class LoginLogoutTests(TestCase):
         r = self.client.post(reverse("login"), {"username": "ALI@example.com", "password": "GucluSifre#2026"})
         self.assertRedirects(r, "/")
 
-    def test_login_with_username_fails(self):
+    def test_login_with_username(self):
         r = self.client.post(reverse("login"), {"username": "ali", "password": "GucluSifre#2026"})
-        self.assertEqual(r.status_code, 200)
+        self.assertRedirects(r, "/")
+        self.assertEqual(int(self.client.session["_auth_user_id"]), self.user.pk)
+
+    def test_login_with_username_is_case_insensitive(self):
+        r = self.client.post(reverse("login"), {"username": "ALi", "password": "GucluSifre#2026"})
+        self.assertRedirects(r, "/")
+
+    def test_login_with_username_wrong_password(self):
+        r = self.client.post(reverse("login"), {"username": "ali", "password": "yanlis"})
+        self.assertContains(r, "E-posta/kullanıcı adı veya parola hatalı.")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_login_unknown_identifier(self):
+        for ident in ["yok", "yok@example.com"]:
+            r = self.client.post(reverse("login"), {"username": ident, "password": "GucluSifre#2026"})
+            self.assertContains(r, "E-posta/kullanıcı adı veya parola hatalı.")
+
+    def test_value_with_at_sign_is_never_looked_up_as_username(self):
+        # "@" içeren değer her zaman e-posta olarak aranır, kullanıcı adı olarak değil
+        r = self.client.post(reverse("login"), {"username": "ali@", "password": "GucluSifre#2026"})
         self.assertNotIn("_auth_user_id", self.client.session)
 
     def test_wrong_password(self):
         r = self.client.post(reverse("login"), {"username": "ali@example.com", "password": "yanlis"})
-        self.assertContains(r, "E-posta veya parola hatalı.")
+        self.assertContains(r, "E-posta/kullanıcı adı veya parola hatalı.")
 
     def test_login_redirects_to_next(self):
         r = self.client.post(reverse("login") + "?next=/anketlerim/", {"username": "ali@example.com", "password": "GucluSifre#2026", "next": "/anketlerim/"})
@@ -115,3 +134,39 @@ class NavbarAndPrivacyTests(TestCase):
         self.assertContains(r, "Anketlerim")
         self.assertContains(r, "Çıkış")
         self.assertNotContains(r, "gizli@example.com")
+
+
+class SingleRegistrationFlowTests(TestCase):
+    """Bir kullanıcı yalnızca bir kez kayıt olur; sonra çıkış/giriş yapabilir ve oturumu kalır."""
+
+    data = {"username": "ayse_01", "email": "ayse@example.com", "password1": "GucluSifre#2026", "password2": "GucluSifre#2026"}
+
+    def test_register_once_then_logout_and_login_with_email_without_registering_again(self):
+        self.client.post(reverse("register"), self.data)
+        self.assertEqual(User.objects.count(), 1)
+
+        # Kayıttan sonra oturum açık kalır: korumalı sayfaya girişsiz erişilir
+        self.assertEqual(self.client.get("/anket/yeni/").status_code, 200)
+        self.assertEqual(self.client.get("/anketlerim/").status_code, 200)
+
+        # Çıkış yap, sonra yeniden KAYIT OLMADAN e-posta + parola ile giriş yap
+        self.client.post(reverse("logout"))
+        self.assertRedirects(self.client.get("/anket/yeni/"), "/giris/?next=/anket/yeni/")
+        r = self.client.post(reverse("login"), {"username": "ayse@example.com", "password": "GucluSifre#2026"})
+        self.assertRedirects(r, "/")
+        self.assertEqual(self.client.get("/anket/yeni/").status_code, 200)
+        self.assertEqual(User.objects.count(), 1)
+
+    def test_second_registration_with_same_details_is_rejected_not_duplicated(self):
+        self.client.post(reverse("register"), self.data)
+        self.client.post(reverse("logout"))
+        r = self.client.post(reverse("register"), self.data)
+        self.assertContains(r, "Bu kullanıcı adı zaten alınmış.")
+        self.assertContains(r, "Bu e-posta adresi zaten kayıtlı.")
+        self.assertEqual(User.objects.count(), 1)
+
+    def test_login_is_case_insensitive_on_email(self):
+        self.client.post(reverse("register"), self.data)
+        self.client.post(reverse("logout"))
+        r = self.client.post(reverse("login"), {"username": "AYSE@Example.COM", "password": "GucluSifre#2026"})
+        self.assertRedirects(r, "/")

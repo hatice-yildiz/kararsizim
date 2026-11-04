@@ -52,11 +52,17 @@
         <label for="closes_date">{{ form.closes_at.label }}</label>
         <div class="closing-inputs">
           <input type="date" id="closes_date" aria-label="Kapanış tarihi" {% if locked %}readonly{% endif %}>
-          <input type="time" id="closes_time" aria-label="Kapanış saati" step="60" {% if locked %}readonly{% endif %}>
+          <select id="closes_hour" aria-label="Kapanış saati" {% if locked %}disabled{% endif %}>
+            <option value="">Saat</option>
+          </select>
+          <select id="closes_minute" aria-label="Kapanış dakikası" {% if locked %}disabled{% endif %}>
+            <option value="">Dakika</option>
+          </select>
         </div>
         <input type="hidden" name="closes_at" id="{{ form.closes_at.id_for_label }}" value="{{ form.closes_at.value|default_if_none:'' }}" {% if editing %}data-utc="{{ form.closes_at_utc.value|default_if_none:'' }}"{% endif %}>
         {{ form.closes_at_utc }}
         <small class="help">Saatin tarayıcının yerel saat dilimine göre. Kapanıştan sonra yeni tahmin alınmaz.</small>
+        <small class="error" id="closing-error" hidden>Kapanış için tarih, saat ve dakikanın üçünü de seç.</small>
         {% for e in form.closes_at.errors %}<small class="error">{{ e }}</small>{% endfor %}
       </div>
 

@@ -76,7 +76,7 @@ DATABASE_URL= .venv/bin/python manage.py migrate && DATABASE_URL= .venv/bin/pyth
 
 Vercel `manage.py` dosyasını bulup Django'yu otomatik tanır; `vercel.json` gerekmez. Build sırasında `collectstatic` kendiliğinden çalışır ve statik dosyalar CDN'den sunulur.
 
-1. [vercel.com/new](https://vercel.com/new) adresinden GitHub'daki `kararsizim` reposunu içe aktar. Framework otomatik olarak Django seçilir; build ayarlarına dokunma.
+1. [vercel.com/new](https://vercel.com/new) adresinden GitHub'daki `tahmince` reposunu içe aktar. Framework otomatik olarak Django seçilir; build ayarlarına dokunma.
 2. **Settings → Environment Variables** bölümüne ekle (Production için):
 
    | Ad | Değer |

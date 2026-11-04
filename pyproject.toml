@@ -1,5 +1,5 @@
 [project]
-name = "kararsizim"
+name = "tahmince"
 version = "0.1.0"
 requires-python = ">=3.12"
 # Not: requirements.txt ile aynı tutulmalı (Vercel pyproject.toml'u okuyabilir).

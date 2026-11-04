@@ -27,7 +27,7 @@ class HomeTests(TestCase):
     def test_home_opens(self):
         r = self.client.get("/")
         self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "Kararsızım")
+        self.assertContains(r, "Tahmince")
 
 
 from django.urls import reverse
@@ -108,8 +108,8 @@ class LoginLogoutTests(TestCase):
         self.assertContains(r, "E-posta/kullanıcı adı veya parola hatalı.")
 
     def test_login_redirects_to_next(self):
-        r = self.client.post(reverse("login") + "?next=/anketlerim/", {"username": "ali@example.com", "password": "GucluSifre#2026", "next": "/anketlerim/"})
-        self.assertRedirects(r, "/anketlerim/", fetch_redirect_response=False)
+        r = self.client.post(reverse("login") + "?next=/sorularim/", {"username": "ali@example.com", "password": "GucluSifre#2026", "next": "/sorularim/"})
+        self.assertRedirects(r, "/sorularim/", fetch_redirect_response=False)
 
     def test_logout_requires_post(self):
         self.client.force_login(self.user)
@@ -131,7 +131,8 @@ class NavbarAndPrivacyTests(TestCase):
         self.client.force_login(u)
         r = self.client.get("/")
         self.assertContains(r, "@ali")
-        self.assertContains(r, "Anketlerim")
+        self.assertContains(r, "Tahminlerim")
+        self.assertContains(r, "Sorularım")
         self.assertContains(r, "Çıkış")
         self.assertNotContains(r, "gizli@example.com")
 
@@ -146,15 +147,15 @@ class SingleRegistrationFlowTests(TestCase):
         self.assertEqual(User.objects.count(), 1)
 
         # Kayıttan sonra oturum açık kalır: korumalı sayfaya girişsiz erişilir
-        self.assertEqual(self.client.get("/anket/yeni/").status_code, 200)
-        self.assertEqual(self.client.get("/anketlerim/").status_code, 200)
+        self.assertEqual(self.client.get("/soru/yeni/").status_code, 200)
+        self.assertEqual(self.client.get("/sorularim/").status_code, 200)
 
         # Çıkış yap, sonra yeniden KAYIT OLMADAN e-posta + parola ile giriş yap
         self.client.post(reverse("logout"))
-        self.assertRedirects(self.client.get("/anket/yeni/"), "/giris/?next=/anket/yeni/")
+        self.assertRedirects(self.client.get("/soru/yeni/"), "/giris/?next=/soru/yeni/")
         r = self.client.post(reverse("login"), {"username": "ayse@example.com", "password": "GucluSifre#2026"})
         self.assertRedirects(r, "/")
-        self.assertEqual(self.client.get("/anket/yeni/").status_code, 200)
+        self.assertEqual(self.client.get("/soru/yeni/").status_code, 200)
         self.assertEqual(User.objects.count(), 1)
 
     def test_second_registration_with_same_details_is_rejected_not_duplicated(self):

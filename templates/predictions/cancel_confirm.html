@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}İptali Onayla · Tahmince{% endblock %}
+{% block content %}
+  <div class="form-card">
+    <h1>İptali onayla</h1>
+    <div class="summary">
+      <p><strong>{{ question.title }}</strong></p>
+      <p>Gerekçe: {{ form.cleaned_data.reason }}</p>
+    </div>
+    <div class="notice"><strong>Bu işlem geri alınamaz.</strong> Soru iptal edilir ve kimseye puan verilmez.</div>
+    <form method="post" data-loading>
+      {% csrf_token %}
+      <input type="hidden" name="reason" value="{{ form.cleaned_data.reason }}">
+      <input type="hidden" name="confirm" value="1">
+      <div class="form-actions">
+        <button type="submit" class="btn btn-danger" data-loading-text="İptal ediliyor…">Onaylıyorum, soruyu iptal et</button>
+        <a href="{% url 'question_cancel' question.pk %}">Geri dön</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

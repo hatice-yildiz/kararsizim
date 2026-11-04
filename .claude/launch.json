@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "kararsizim-local",
+      "name": "tahmince-local",
       "runtimeExecutable": "env",
-      "runtimeArgs": ["DATABASE_URL=", ".venv/bin/python", "manage.py", "runserver", "8000"],
+      "runtimeArgs": ["DATABASE_URL=", "DEBUG=True", ".venv/bin/python", "manage.py", "runserver", "8000"],
       "port": 8000
     }
   ]

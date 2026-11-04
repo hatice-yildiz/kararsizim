@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "accounts",
     "polls",
+    "predictions",
 ]
 
 MIDDLEWARE = [
@@ -56,7 +57,6 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
-    "polls.middleware.VoterCookieMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -82,13 +82,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database: DATABASE_URL (Supabase PostgreSQL) varsa onu, yoksa yerel SQLite kullan.
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL:
-    DATABASES = {
-        "default": dj_database_url.parse(
-            DATABASE_URL,
-            conn_max_age=0,  # serverless + transaction pooler
-            ssl_require=True,
-        )
-    }
+    _db = dj_database_url.parse(DATABASE_URL, conn_max_age=0)  # serverless + transaction pooler
+    # Uzak veritabanında (Supabase) SSL zorunlu; yalnızca yerel geliştirme/test PostgreSQL'inde atlanır.
+    if _db.get("HOST") not in ("localhost", "127.0.0.1", "::1", ""):
+        _db.setdefault("OPTIONS", {})["sslmode"] = "require"
+    DATABASES = {"default": _db}
     # Supabase transaction pooler (port 6543) server-side cursor desteklemez
     DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
     # psycopg3 hazır sorguları (prepared statements) pooler'ın transaction modunda sorun çıkarır

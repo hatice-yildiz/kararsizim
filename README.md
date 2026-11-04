@@ -1,11 +1,27 @@
-# Kararsızım
+# Tahmince
 
-Kararsız kaldığın konularda başkalarına anket açıp oy toplayabildiğin basit bir web uygulaması.
+**Tahminini yap, sonucu gör!** Gelecekte sonucu belli olacak konularda tahmin soruları açılır, üyeler
+seçeneklerden birini seçerek tahmin yapar. Süre bitince soru kapanır; sonucu soruyu açan kişi bildirir ve
+doğru bilenler 10 puan kazanır. Puanlar yalnızca eğlence içindir (para, bahis, ödeme, ödül yok).
+
 Django 5.2 + Supabase (PostgreSQL) + saf HTML/CSS/JS, Vercel'de çalışır.
 
-- Misafirler anketleri görür ve oy verir. Üyeler ayrıca anket oluşturur ve kendi anketlerini siler.
-- Anketlerde oluşturanın kullanıcı adı görünür, e-postası asla görünmez.
-- Ayrıntılı tasarım: [docs/KARARSIZIM_PLAN.md](docs/KARARSIZIM_PLAN.md)
+## Nasıl çalışır
+
+- **Misafirler** soruları, tahmin dağılımını, sonuçları ve puan tablosunu görür. Tahmin yapmak, soru açmak ve puan kazanmak için giriş gerekir.
+- **Üyeler** 2-4 seçenekli, kategorili ve kapanış zamanlı soru açar. Her soruya tek tahmin yapar, kapanışa kadar değiştirebilir. Kendi sorusuna tahmin yapamaz ve kendi sorusundan puan kazanamaz.
+- **Sonuç:** Yalnızca soruyu açan kişi, yalnızca kapanıştan sonra, onay adımıyla ve bir kez doğru seçeneği bildirir. Belirlenemiyorsa gerekçeyle iptal eder (kimseye puan verilmez).
+- **Durumlar:** Tahmine açık → Sonuç bekliyor (süre doldu) → Sonuçlandı ya da İptal edildi. "Sonuç bekliyor" ayrı saklanmaz, kapanış zamanından türetilir.
+- **Eski anketler:** Tahmince'den önceki anketler silinmedi; salt okunur "Eski Anketler" bölümünde saklanır, puan üretmez.
+- Kullanıcı adı görünür, e-posta hiçbir sayfada görünmez. Giriş e-posta **veya** kullanıcı adıyla yapılır.
+
+## Güvenlik ve kurallar nerede uygulanır
+
+1. **Sunucu kodu** (`predictions/services.py`): tüm yazma işlemleri tek veritabanı işleminde, soru satırı kilitlenerek yapılır. Sonuçlandırma `UPDATE ... WHERE status='open'` ile tek seferliktir; puanlar yalnızca bu geçişi kazanan işlemde yazılır.
+2. **Veritabanı kısıtları ve tetikleyicileri** (`predictions/migrations/`): benzersiz tahmin, tutarlı durum, geçerli puan ve (PostgreSQL) kapanış sonrası tahmin, kendi soruna tahmin, kilitli alanlar, değişmez sonuç ve tek seferlik puan tetikleyicileri.
+3. **RLS:** Tüm tablolarda Row Level Security açıktır ve politika yoktur; Supabase'in otomatik REST API'si hiçbir tabloya erişemez. Django `postgres` rolüyle bağlanır, etkilenmez. Gizli anahtarlar yalnızca sunucu ortam değişkenlerindedir.
+
+Ayrıntılı tasarım için eski plan: [docs/KARARSIZIM_PLAN.md](docs/KARARSIZIM_PLAN.md) (Tahmince dönüşümü için `docs/TAHMINCE.md`).
 
 ## Yerel kurulum
 
@@ -28,6 +44,18 @@ Testler (SQLite ile çalışsın diye `DATABASE_URL` boş verilir; yoksa Django 
 DATABASE_URL= .venv/bin/python manage.py test
 ```
 
+PostgreSQL tetikleyici testleri (`predictions/tests_postgres.py`) SQLite'ta atlanır. Onları çalıştırmak için yerel/geçici bir PostgreSQL gerekir (üretim veritabanına bağlama):
+
+```bash
+DATABASE_URL=postgresql://kullanici@localhost:5432/postgres .venv/bin/python manage.py test
+```
+
+Yerel görsel deneme için örnek veri (yalnızca DEBUG + SQLite'ta çalışır):
+
+```bash
+DATABASE_URL= .venv/bin/python manage.py migrate && DATABASE_URL= .venv/bin/python manage.py seed_demo
+```
+
 ## Supabase
 
 1. Supabase'de bir proje oluştur. Panelde **Connect** düğmesinden iki bağlantı dizesi al:
@@ -40,8 +68,9 @@ DATABASE_URL= .venv/bin/python manage.py test
    .venv/bin/python manage.py migrate
    ```
 
-   Bu, `polls.0003_enable_rls` ile tüm tablolarda Row Level Security'yi de açar. Politika eklenmediği için Supabase'in otomatik REST API'si bu tablolara erişemez; Django `postgres` rolüyle bağlandığı için etkilenmez.
+   Bu, `polls.0003_enable_rls` ve `predictions.0002_db_guards` ile tüm tablolarda Row Level Security'yi açar ve tetikleyicileri kurar. Politika eklenmediği için Supabase'in otomatik REST API'si bu tablolara erişemez; Django `postgres` rolüyle bağlandığı için etkilenmez.
 4. **Yeni bir model/tablo eklediğinde** o tabloda da RLS'i açan bir migration yaz. Eski migration yeni tabloları kapsamaz.
+5. **Mevcut verileri korumak:** `predictions` migration'ları yeni tablolar ekler; `accounts` ve `polls` tablolarına hiç dokunmaz (kullanıcılar, eski anketler ve oylar silinmez ya da sıfırlanmaz).
 
 ## Vercel'e yayın
 

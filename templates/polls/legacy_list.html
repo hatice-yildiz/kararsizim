@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Eski Anketler · Tahmince{% endblock %}
+{% block content %}
+  <div class="page-head"><h1>Eski anketler</h1></div>
+  <div class="legacy-banner">Bunlar Tahmince'den önce açılmış eski anketlerdir. Arşiv olarak saklanır; artık oy verilemez ve puan etkisi yoktur.</div>
+  <div class="grid">
+    {% for poll in page %}
+      <a class="card" href="{% url 'legacy_detail' poll.pk %}">
+        <div class="card-top"><span class="badge badge-cancelled" style="background: var(--surface-2); color: var(--muted); border-color: var(--border)">Arşiv</span></div>
+        <h2>{{ poll.question }}</h2>
+        <div class="card-meta"><span><strong>@{{ poll.created_by.username }}</strong></span><span>{{ poll.option_count }} seçenek</span><span>{{ poll.total_votes }} oy</span></div>
+      </a>
+    {% empty %}
+      <div class="empty" style="grid-column: 1 / -1"><p>Arşivde anket yok.</p></div>
+    {% endfor %}
+  </div>
+  {% if page.has_other_pages %}
+    <nav class="pagination" aria-label="Sayfalama">
+      {% if page.has_previous %}<a href="?sayfa={{ page.previous_page_number }}">← Önceki</a>{% endif %}
+      <span>{{ page.number }} / {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a href="?sayfa={{ page.next_page_number }}">Sonraki →</a>{% endif %}
+    </nav>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Sonucu Onayla · Tahmince{% endblock %}
+{% block content %}
+  <div class="form-card">
+    <h1>Sonucu onayla</h1>
+    <div class="summary">
+      <p><strong>{{ question.title }}</strong></p>
+      <p>Doğru seçenek: <strong>🏆 {{ chosen.text }}</strong></p>
+      <p>Açıklama: {{ form.cleaned_data.note }}</p>
+      {% if form.cleaned_data.source_url %}<p>Kaynak: {{ form.cleaned_data.source_url }}</p>{% endif %}
+      <p>{{ winners_preview }} kişi {{ points }} puan kazanacak.</p>
+    </div>
+    <div class="notice"><strong>Bu işlem geri alınamaz.</strong> Sonuç açıklandıktan sonra değiştirilemez ve puanlar hemen dağıtılır.</div>
+    <form method="post" data-loading>
+      {% csrf_token %}
+      <input type="hidden" name="choice" value="{{ chosen.pk }}">
+      <input type="hidden" name="note" value="{{ form.cleaned_data.note }}">
+      <input type="hidden" name="source_url" value="{{ form.cleaned_data.source_url }}">
+      <input type="hidden" name="confirm" value="1">
+      <div class="form-actions">
+        <button type="submit" class="btn btn-green" data-loading-text="Puanlar dağıtılıyor…">Onaylıyorum, sonucu açıkla</button>
+        <a href="{% url 'question_resolve' question.pk %}">Geri dön</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

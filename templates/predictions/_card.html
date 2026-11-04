@@ -1,0 +1,24 @@
+{% load tahmince %}
+<a class="card" href="{% url 'question_detail' q.pk %}">
+  <div class="card-top">
+    <span class="badge badge-cat">{{ q.get_category_display }}</span>
+    <span class="badge badge-{{ q.display_status }}">{{ q.display_status_label }}</span>
+  </div>
+  <h2>{{ q.title }}</h2>
+  <div class="card-meta">
+    <span><strong>@{{ q.created_by.username }}</strong></span>
+    <span>{{ q.prediction_count }} tahmin</span>
+  </div>
+  <div class="card-foot">
+    {% if q.display_status == "open" %}
+      <span>Kalan: <span class="countdown" data-countdown="{{ q.closes_at|iso_utc }}">{{ q.closes_at|timeuntil }}</span></span>
+    {% elif q.display_status == "pending" %}
+      <span class="countdown is-ended">Süre doldu · sonuç bekleniyor</span>
+    {% elif q.display_status == "resolved" %}
+      <span>Sonuç: <strong>{{ q.correct_choice.text }}</strong></span>
+    {% else %}
+      <span>Soru iptal edildi</span>
+    {% endif %}
+    <time data-local datetime="{{ q.closes_at|iso_utc }}" class="meta">{{ q.closes_at|date:"d.m.Y H:i" }}</time>
+  </div>
+</a>

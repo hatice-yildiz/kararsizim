@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load tahmince %}
+{% block title %}Sorularım · Tahmince{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <h1>Sorularım</h1>
+    <a href="{% url 'question_create' %}" class="btn btn-primary btn-sm">Tahmin Sorusu Oluştur</a>
+  </div>
+  {% for q in questions %}
+    <div class="item">
+      <a class="title" href="{% url 'question_detail' q.pk %}">{{ q.title }}</a>
+      <div class="item-meta">
+        <span class="badge badge-cat">{{ q.get_category_display }}</span>
+        <span class="badge badge-{{ q.display_status }}">{{ q.display_status_label }}</span>
+        <span>{{ q.prediction_count }} tahmin</span>
+        <span>Kapanış: <time data-local datetime="{{ q.closes_at|iso_utc }}">{{ q.closes_at|date:"d.m.Y H:i" }}</time></span>
+      </div>
+      <div class="item-actions">
+        {% if q.display_status == "pending" %}<a href="{% url 'question_resolve' q.pk %}" class="btn btn-green btn-sm">Sonucu Bildir</a>{% endif %}
+        {% if q.status == "open" %}<a href="{% url 'question_edit' q.pk %}" class="btn btn-ghost btn-sm">Düzenle</a>
+          <a href="{% url 'question_cancel' q.pk %}" class="btn btn-ghost btn-sm">İptal Et</a>{% endif %}
+        {% if q.prediction_count == 0 %}<a href="{% url 'question_delete' q.pk %}" class="btn btn-danger btn-sm">Sil</a>{% endif %}
+      </div>
+    </div>
+  {% empty %}
+    <div class="empty">
+      <p>Henüz soru oluşturmadın. İlk tahmin sorunu aç! 🎯</p>
+      <a href="{% url 'question_create' %}" class="btn btn-primary">Tahmin Sorusu Oluştur</a>
+    </div>
+  {% endfor %}
+{% endblock %}

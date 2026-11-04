@@ -1,18 +1,37 @@
 from django.contrib import admin
 from django.urls import path
+from django.views.generic import RedirectView
 
 from accounts import views as account_views
 from polls import views as poll_views
+from predictions import views as v
+
+admin.site.site_header = "Tahmince Yönetim"
+admin.site.site_title = "Tahmince"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", poll_views.home, name="home"),
-    path("populer/", poll_views.popular, name="popular"),
-    path("anket/yeni/", poll_views.poll_create, name="poll_create"),
-    path("anket/<int:pk>/", poll_views.poll_detail, name="poll_detail"),
-    path("anket/<int:pk>/oy/", poll_views.poll_vote, name="poll_vote"),
-    path("anket/<int:pk>/sil/", poll_views.poll_delete, name="poll_delete"),
-    path("anketlerim/", poll_views.my_polls, name="my_polls"),
+    # Tahmin soruları
+    path("", v.home, name="home"),
+    path("soru/yeni/", v.question_create, name="question_create"),
+    path("soru/<int:pk>/", v.question_detail, name="question_detail"),
+    path("soru/<int:pk>/tahmin/", v.predict, name="predict"),
+    path("soru/<int:pk>/duzenle/", v.question_edit, name="question_edit"),
+    path("soru/<int:pk>/sil/", v.question_delete, name="question_delete"),
+    path("soru/<int:pk>/sonuc/", v.question_resolve, name="question_resolve"),
+    path("soru/<int:pk>/iptal/", v.question_cancel, name="question_cancel"),
+    path("tahminlerim/", v.my_predictions, name="my_predictions"),
+    path("sorularim/", v.my_questions, name="my_questions"),
+    path("puan-tablosu/", v.leaderboard, name="leaderboard"),
+    # Eski anketler (salt okunur arşiv)
+    path("eski-anketler/", poll_views.legacy_list, name="legacy_list"),
+    path("eski-anketler/<int:pk>/", poll_views.legacy_detail, name="legacy_detail"),
+    # Eski adresler yeni yerlerine yönlenir
+    path("anket/<int:pk>/", RedirectView.as_view(pattern_name="legacy_detail"), name="old_poll_detail"),
+    path("anket/yeni/", RedirectView.as_view(pattern_name="question_create")),
+    path("anketlerim/", RedirectView.as_view(pattern_name="my_questions")),
+    path("populer/", RedirectView.as_view(pattern_name="leaderboard")),
+    # Üyelik
     path("kayit/", account_views.register, name="register"),
     path("giris/", account_views.GuestLoginView.as_view(), name="login"),
     path("cikis/", account_views.logout_view, name="logout"),

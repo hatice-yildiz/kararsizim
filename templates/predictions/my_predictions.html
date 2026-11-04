@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Tahminlerim · Tahmince{% endblock %}
+{% block content %}
+  <div class="page-head"><h1>Tahminlerim</h1></div>
+  <div class="stats">
+    <div class="stat"><b>{{ total_points }}</b><span>Toplam puan</span></div>
+    <div class="stat"><b>{{ correct }}</b><span>Doğru tahmin</span></div>
+    <div class="stat"><b>{{ total }}</b><span>Toplam tahmin</span></div>
+  </div>
+  {% for p in page %}
+    <div class="item">
+      <a class="title" href="{% url 'question_detail' p.question.pk %}">{{ p.question.title }}</a>
+      <div class="item-meta">
+        <span class="badge badge-{{ p.question.display_status }}">{{ p.question.display_status_label }}</span>
+        <span>Tahminin: <strong>{{ p.choice.text }}</strong></span>
+        {% if p.question.status == "resolved" %}
+          <span>Doğru cevap: <strong>{{ p.question.correct_choice.text }}</strong></span>
+          {% if p.is_correct %}<span class="points-won">+{{ p.points_awarded }} puan 🎉</span>{% else %}<span>Tutmadı · 0 puan</span>{% endif %}
+        {% elif p.question.status == "cancelled" %}
+          <span>Soru iptal edildi · puan yok</span>
+        {% elif p.question.display_status == "open" %}
+          <span>Kapanışa kadar değiştirebilirsin</span>
+        {% else %}
+          <span>Sonuç bekleniyor</span>
+        {% endif %}
+      </div>
+    </div>
+  {% empty %}
+    <div class="empty">
+      <p>Henüz tahmin yapmadın. Bir soru seç ve ilk tahminini yap 🎯</p>
+      <a href="{% url 'home' %}" class="btn btn-primary">Sorulara göz at</a>
+    </div>
+  {% endfor %}
+  {% if page.has_other_pages %}
+    <nav class="pagination" aria-label="Sayfalama">
+      {% if page.has_previous %}<a href="?sayfa={{ page.previous_page_number }}">← Önceki</a>{% endif %}
+      <span>{{ page.number }} / {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a href="?sayfa={{ page.next_page_number }}">Sonraki →</a>{% endif %}
+    </nav>
+  {% endif %}
+{% endblock %}

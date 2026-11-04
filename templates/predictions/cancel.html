@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Soruyu İptal Et · Tahmince{% endblock %}
+{% block content %}
+  <a class="back-link" href="{% url 'question_detail' question.pk %}">← Soruya dön</a>
+  <div class="form-card">
+    <h1>Soruyu iptal et</h1>
+    <p><strong>{{ question.title }}</strong></p>
+    <div class="notice">Sonuç belirlenemiyorsa soruyu gerekçeyle iptal edebilirsin. İptal edilen soruda <strong>kimseye puan verilmez</strong> ve işlem geri alınamaz.</div>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="field">
+        <label for="{{ form.reason.id_for_label }}">{{ form.reason.label }}</label>
+        {{ form.reason }}
+        {% for e in form.reason.errors %}<small class="error">{{ e }}</small>{% endfor %}
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-danger">Devam et</button>
+        <a href="{% url 'question_detail' question.pk %}">Vazgeç</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

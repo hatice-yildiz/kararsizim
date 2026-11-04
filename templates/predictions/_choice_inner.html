@@ -1,0 +1,11 @@
+<span class="choice-fill" style="--pct: {{ c.percent }}%"></span>
+<span class="choice-row">
+  <span class="choice-text">{{ c.text }}</span>
+  <span class="choice-stats"><strong>{{ c.count }}</strong> tahmin · <strong>%{{ c.percent }}</strong></span>
+</span>
+{% if c.is_mine or c.is_correct %}
+  <span class="choice-tags">
+    {% if c.is_mine %}<span class="tag tag-mine">✓ Senin tahminin</span>{% endif %}
+    {% if c.is_correct %}<span class="tag tag-correct">🏆 Doğru cevap</span>{% endif %}
+  </span>
+{% endif %}

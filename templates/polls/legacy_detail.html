@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ poll.question }} · Eski Anket · Tahmince{% endblock %}
+{% block content %}
+  <a class="back-link" href="{% url 'legacy_list' %}">← Eski anketler</a>
+  <article class="card detail">
+    <div class="legacy-banner">Arşiv: Bu anket Tahmince'den önce açılmış eski bir ankettir. Oylama kapalıdır.</div>
+    <h1>{{ poll.question }}</h1>
+    <p class="meta card-meta"><span><strong>@{{ poll.created_by.username }}</strong></span><span>{{ poll.created_at|date:"d.m.Y" }}</span></p>
+    {% if poll.description %}<p>{{ poll.description|linebreaksbr }}</p>{% endif %}
+    <ul class="choices">
+      {% for o in options %}
+        <li class="choice choice-c{{ forloop.counter|add:0 }}">
+          <span class="choice-fill" style="--pct: {{ o.percent }}%"></span>
+          <span class="choice-row"><span class="choice-text">{{ o.text }}</span><span class="choice-stats"><strong>{{ o.vote_count }}</strong> oy · <strong>%{{ o.percent }}</strong></span></span>
+        </li>
+      {% endfor %}
+    </ul>
+    <p class="total">Toplam {{ total_votes }} oy</p>
+  </article>
+{% endblock %}

@@ -1,5 +1,0 @@
-<a class="card strip-c{{ poll.accent }}" href="{% url 'poll_detail' poll.pk %}">
-  <h2>{% if rank %}<span class="rank">#{{ rank }}</span> {% endif %}{{ poll.question }}</h2>
-  <p class="meta"><strong>@{{ poll.created_by.username }}</strong> · {{ poll.created_at|timesince }} önce</p>
-  <p class="meta">{{ poll.option_count }} seçenek · {{ poll.total_votes }} oy</p>
-</a>

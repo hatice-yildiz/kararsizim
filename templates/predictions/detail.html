@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load tahmince %}
+{% block title %}{{ question.title }} · Tahmince{% endblock %}
+{% block description %}{{ question.title }} — tahminini yap, sonucu gör!{% endblock %}
+{% block og_title %}{{ question.title }} · Tahmince{% endblock %}
+{% block content %}
+  <a class="back-link" href="{% url 'home' %}">← Tüm sorular</a>
+  <article class="card detail" {% if question.accepts_predictions %}data-reload-at="{{ question.closes_at|iso_utc }}"{% endif %}>
+    <div class="card-top">
+      <span class="badge badge-cat">{{ question.get_category_display }}</span>
+      <span class="badge badge-{{ question.display_status }}">{{ question.display_status_label }}</span>
+    </div>
+    <h1>{{ question.title }}</h1>
+    <p class="meta card-meta"><span>Soruyu soran: <strong>@{{ question.created_by.username }}</strong></span><span>{{ total }} tahmin</span></p>
+    {% if question.description %}<p>{{ question.description|linebreaksbr }}</p>{% endif %}
+
+    <div class="criteria">
+      <h3>Sonuç nasıl belirlenecek?</h3>
+      <p>{{ question.resolution_criteria|linebreaksbr }}</p>
+    </div>
+
+    <div class="timebox">
+      <span>Tahminler kapanır: <strong><time data-local datetime="{{ question.closes_at|iso_utc }}">{{ question.closes_at|date:"d.m.Y H:i" }}</time></strong></span>
+      {% if question.display_status == "open" %}
+        <span>Kalan süre: <span class="countdown" data-countdown="{{ question.closes_at|iso_utc }}">{{ question.closes_at|timeuntil }}</span></span>
+      {% endif %}
+    </div>
+
+    {% if question.status == "resolved" %}
+      <div class="banner banner-resolved">
+        <h3>🏆 Sonuç: {{ question.correct_choice.text }}</h3>
+        <p>{{ question.resolution_note|linebreaksbr }}</p>
+        {% if question.resolution_source_url %}<p><a href="{{ question.resolution_source_url }}" target="_blank" rel="noopener noreferrer nofollow">Kaynak bağlantısı ↗</a></p>{% endif %}
+        <small>Sonuç, soruyu oluşturan kişi tarafından bildirildi · <time data-local datetime="{{ question.resolved_at|iso_utc }}">{{ question.resolved_at|date:"d.m.Y H:i" }}</time></small>
+      </div>
+      {% if my_prediction %}
+        {% if my_prediction.is_correct %}
+          <div class="banner banner-win"><h3>🎉 Doğru bildin! +{{ points }} puan</h3></div>
+        {% else %}
+          <div class="banner banner-info"><h3>Bu sefer tutmadı</h3><p>Bir sonraki soruda şansını dene.</p></div>
+        {% endif %}
+      {% endif %}
+    {% elif question.status == "cancelled" %}
+      <div class="banner banner-cancelled">
+        <h3>Soru iptal edildi</h3>
+        <p>{{ question.cancel_reason|linebreaksbr }}</p>
+        <small>Kimseye puan verilmedi · Karar, soruyu oluşturan kişi tarafından verildi.</small>
+      </div>
+    {% elif question.awaits_result %}
+      <div class="banner banner-info">
+        <h3>⏳ Sonuç bekleniyor</h3>
+        <p>Tahmin süresi doldu. Sonucu soruyu oluşturan kişi açıklayacak.</p>
+      </div>
+    {% endif %}
+
+    {% if can_predict and user.is_authenticated %}
+      <h2>{% if my_prediction %}Tahminini değiştirebilirsin (kapanışa kadar){% else %}Tahminin ne?{% endif %}</h2>
+      <form method="post" action="{% url 'predict' question.pk %}" data-loading>
+        {% csrf_token %}
+        <div class="choices">
+          {% for c in choices %}
+            <button type="submit" name="choice" value="{{ c.pk }}" class="choice choice-c{{ forloop.counter }}{% if c.is_mine %} is-mine{% endif %}" {% if c.is_mine %}aria-pressed="true"{% endif %}>
+              {% include "predictions/_choice_inner.html" %}
+            </button>
+          {% endfor %}
+        </div>
+      </form>
+    {% else %}
+      <ul class="choices">
+        {% for c in choices %}
+          <li class="choice choice-c{{ forloop.counter }}{% if c.is_mine %} is-mine{% endif %}{% if c.is_correct %} is-correct{% endif %}">
+            {% include "predictions/_choice_inner.html" %}
+          </li>
+        {% endfor %}
+      </ul>
+      {% if can_predict %}
+        <p><a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-green">Tahmin yapmak için giriş yap</a></p>
+        <p class="help">Hesabın yok mu? <a href="{% url 'register' %}">Kayıt ol</a>. Tahmin yapmak için üye olmak gerekir.</p>
+      {% elif is_owner and question.accepts_predictions %}
+        <p class="help">Kendi sorunuza tahmin yapamazsınız ve puan kazanamazsınız.</p>
+      {% endif %}
+    {% endif %}
+    <p class="total">Toplam {{ total }} tahmin · Seçilen seçenek yeşil çerçeveyle işaretlenir.</p>
+
+    {% if is_owner %}
+      <div class="manage">
+        <span class="manage-label">Soru yönetimi</span>
+        {% if can_resolve %}<a href="{% url 'question_resolve' question.pk %}" class="btn btn-green btn-sm">Sonucu Bildir</a>{% endif %}
+        {% if can_edit %}<a href="{% url 'question_edit' question.pk %}" class="btn btn-ghost btn-sm">Düzenle</a>{% endif %}
+        {% if can_cancel %}<a href="{% url 'question_cancel' question.pk %}" class="btn btn-ghost btn-sm">İptal Et</a>{% endif %}
+        {% if can_delete %}<a href="{% url 'question_delete' question.pk %}" class="btn btn-danger btn-sm">Sil</a>{% else %}<span class="help">Tahmin almış soru silinemez.</span>{% endif %}
+      </div>
+    {% endif %}
+  </article>
+{% endblock %}

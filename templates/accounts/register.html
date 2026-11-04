@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Kayıt Ol · Kararsızım{% endblock %}
+{% block title %}Kayıt Ol · Tahmince{% endblock %}
 {% block content %}
   <div class="form-card">
     <h1>Kayıt Ol</h1>
-    <form method="post" novalidate>
+    <form method="post" novalidate data-loading>
       {% csrf_token %}
       {% include "accounts/_form_fields.html" %}
-      <button type="submit" class="btn btn-primary">Kayıt Ol</button>
+      <button type="submit" class="btn btn-primary" data-loading-text="Kaydediliyor…">Kayıt Ol</button>
     </form>
     <p class="form-footer">Zaten hesabın var mı? <a href="/giris/">Giriş yap</a></p>
   </div>

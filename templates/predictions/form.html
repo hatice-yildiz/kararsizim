@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if editing %}Soruyu Düzenle{% else %}Tahmin Sorusu Oluştur{% endif %} · Tahmince{% endblock %}
+{% block content %}
+  <div class="form-card wide">
+    <h1>{% if editing %}Soruyu düzenle{% else %}Tahmin sorusu oluştur{% endif %}</h1>
+    {% if editing and locked %}
+      <div class="notice">Bu soru tahmin aldı. Başlık, sonuç ölçütü, seçenekler ve kapanış zamanı artık değiştirilemez; yalnızca açıklama ve kategoriyi düzenleyebilirsin.</div>
+    {% endif %}
+    <form method="post" novalidate id="question-form" data-loading>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="message message-error" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+
+      <div class="field">
+        <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+        {{ form.title }}
+        {% for e in form.title.errors %}<small class="error">{{ e }}</small>{% endfor %}
+      </div>
+      <div class="field">
+        <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
+        {{ form.category }}
+        {% for e in form.category.errors %}<small class="error">{{ e }}</small>{% endfor %}
+      </div>
+      <div class="field">
+        <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+        {{ form.description }}
+        {% for e in form.description.errors %}<small class="error">{{ e }}</small>{% endfor %}
+      </div>
+      <div class="field">
+        <label for="{{ form.resolution_criteria.id_for_label }}">{{ form.resolution_criteria.label }}</label>
+        {{ form.resolution_criteria }}
+        <small class="help">Sonucu kimin, hangi kaynağa bakarak belirleyeceğini açıkça yaz.</small>
+        {% for e in form.resolution_criteria.errors %}<small class="error">{{ e }}</small>{% endfor %}
+      </div>
+
+      <fieldset class="choices-field">
+        <legend>Seçenekler (2-4 arası)</legend>
+        {% for field in form.choice_fields %}
+          <div class="field choice-row-input">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            <div class="choice-input">
+              {{ field }}
+              <button type="button" class="remove-choice" aria-label="{{ field.label }} alanını kaldır">×</button>
+            </div>
+            {% for e in field.errors %}<small class="error">{{ e }}</small>{% endfor %}
+          </div>
+        {% endfor %}
+        <button type="button" id="add-choice" class="btn btn-ghost btn-sm">+ Seçenek ekle</button>
+      </fieldset>
+
+      <div class="field" style="margin-top: 18px">
+        <label for="{{ form.closes_at.id_for_label }}">{{ form.closes_at.label }}</label>
+        <input type="datetime-local" name="closes_at" id="{{ form.closes_at.id_for_label }}" value="{{ form.closes_at.value|default_if_none:'' }}" {% if locked %}readonly{% endif %} {% if editing %}data-utc="{{ form.closes_at_utc.value|default_if_none:'' }}"{% endif %} required>
+        {{ form.closes_at_utc }}
+        <small class="help">Saatin tarayıcının yerel saat dilimine göre. Kapanıştan sonra yeni tahmin alınmaz.</small>
+        {% for e in form.closes_at.errors %}<small class="error">{{ e }}</small>{% endfor %}
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" data-loading-text="Kaydediliyor…">{% if editing %}Değişiklikleri Kaydet{% else %}Soruyu Yayınla{% endif %}</button>
+        <a href="{% if editing %}{% url 'question_detail' question.pk %}{% else %}{% url 'home' %}{% endif %}">Vazgeç</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'js/question_form.js' %}"></script>{% endblock %}

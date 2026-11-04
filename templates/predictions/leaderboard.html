@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Puan Tablosu · Tahmince{% endblock %}
+{% block content %}
+  <div class="page-head"><h1>Puan tablosu 🏆</h1></div>
+  <p class="sub">Doğru her tahmin 10 puan. Puanlar yalnızca eğlence içindir. Sonuçlanmış sorularda tahmini olan üyeler listelenir.</p>
+  {% if rows %}
+    <table class="board">
+      <thead><tr><th>#</th><th>Kullanıcı</th><th class="num">Doğru</th><th class="num">Puan</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+          <tr{% if r.is_me %} class="is-me"{% endif %}>
+            <td class="{% if r.rank <= 3 %}rank-{{ r.rank }}{% endif %}">{{ r.rank }}</td>
+            <td>@{{ r.username }}{% if r.is_me %} <span class="badge badge-cat">Sen</span>{% endif %}</td>
+            <td class="num">{{ r.correct_count }} / {{ r.judged_count }}</td>
+            <td class="num points">{{ r.total_points }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="empty">
+      <p>Puan tablosu henüz boş. İlk sonuçlar açıklanınca burada görünür 🥇</p>
+      <a href="{% url 'home' %}" class="btn btn-primary">Tahmin yap</a>
+    </div>
+  {% endif %}
+{% endblock %}

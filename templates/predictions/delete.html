@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Soruyu Sil · Tahmince{% endblock %}
+{% block content %}
+  <div class="form-card">
+    <h1>Soruyu sil</h1>
+    <p>“{{ question.title }}” sorusunu silmek istediğine emin misin? Bu soru henüz tahmin almadığı için silinebilir. İşlem geri alınamaz.</p>
+    <form method="post" class="form-actions" data-loading>
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger" data-loading-text="Siliniyor…">Evet, sil</button>
+      <a href="{% url 'question_detail' question.pk %}">Vazgeç</a>
+    </form>
+  </div>
+{% endblock %}

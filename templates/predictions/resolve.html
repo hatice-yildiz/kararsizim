@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Sonucu Bildir · Tahmince{% endblock %}
+{% block content %}
+  <a class="back-link" href="{% url 'question_detail' question.pk %}">← Soruya dön</a>
+  <div class="form-card">
+    <h1>Sonucu bildir</h1>
+    <p><strong>{{ question.title }}</strong></p>
+    <div class="criteria"><h3>Sonuç ölçütü</h3><p>{{ question.resolution_criteria|linebreaksbr }}</p></div>
+    <div class="notice">Sonucu bir kez açıklayabilirsin; açıklandıktan sonra değiştirilemez. Doğru tahmin yapan her üye {{ points }} puan kazanır. Bir sonraki adımda onay istenecek.</div>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="field">
+        <label>Doğru seçenek hangisi?</label>
+        <div class="radio-list">
+          {% for c in choices %}
+            <label><input type="radio" name="choice" value="{{ c.pk }}" {% if request.POST.choice == c.pk|stringformat:"s" %}checked{% endif %}> {{ c.text }} <small class="help">({{ c.count }} tahmin)</small></label>
+          {% endfor %}
+        </div>
+        {% for e in form.choice.errors %}<small class="error">{{ e }}</small>{% endfor %}
+      </div>
+      <div class="field">
+        <label for="{{ form.note.id_for_label }}">{{ form.note.label }}</label>
+        {{ form.note }}
+        {% for e in form.note.errors %}<small class="error">{{ e }}</small>{% endfor %}
+      </div>
+      <div class="field">
+        <label for="{{ form.source_url.id_for_label }}">{{ form.source_url.label }}</label>
+        {{ form.source_url }}
+        {% for e in form.source_url.errors %}<small class="error">{{ e }}</small>{% endfor %}
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-green">Devam et</button>
+        <a href="{% url 'question_detail' question.pk %}">Vazgeç</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

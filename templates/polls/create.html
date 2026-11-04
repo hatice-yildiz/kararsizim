@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Anket Oluştur · Kararsızım{% endblock %}
+{% block content %}
+  <h1>Anket Oluştur</h1>
+  <form method="post" novalidate id="poll-form">
+    {% csrf_token %}
+    <div class="field">
+      <label for="{{ form.question.id_for_label }}">{{ form.question.label }}</label>
+      {{ form.question }}
+      {% for error in form.question.errors %}<small class="error">{{ error }}</small>{% endfor %}
+    </div>
+    <div class="field">
+      <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+      {{ form.description }}
+      {% for error in form.description.errors %}<small class="error">{{ error }}</small>{% endfor %}
+    </div>
+
+    <fieldset class="options">
+      <legend>Seçenekler (2-5 arası)</legend>
+      {% for field in form.option_fields %}
+        <div class="field option-row">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          <div class="option-input">
+            {{ field }}
+            <button type="button" class="remove-option" aria-label="{{ field.label }} alanını kaldır">×</button>
+          </div>
+          {% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}
+        </div>
+      {% endfor %}
+      <button type="button" id="add-option" class="btn btn-secondary">+ Seçenek ekle</button>
+    </fieldset>
+
+    <button type="submit" class="btn btn-primary">Anketi Yayınla</button>
+  </form>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'js/poll_form.js' %}"></script>{% endblock %}

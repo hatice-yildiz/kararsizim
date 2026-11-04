@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Anketlerim · Kararsızım{% endblock %}
+{% block content %}
+  <h1>Anketlerim</h1>
+  {% for poll in polls %}
+    {% include "polls/_card.html" %}
+  {% empty %}
+    <p>Henüz anketin yok. <a href="{% url 'poll_create' %}">İlk anketini oluştur</a> 🤔</p>
+  {% endfor %}
+{% endblock %}

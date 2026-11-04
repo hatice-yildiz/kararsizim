@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ poll.question }} · Kararsızım{% endblock %}
+{% block content %}
+  <article class="card">
+    <h1>{{ poll.question }}</h1>
+    <p class="meta">@{{ poll.created_by.username }} · {{ poll.created_at|timesince }} önce</p>
+    {% if poll.description %}<p>{{ poll.description|linebreaksbr }}</p>{% endif %}
+
+    {% if show_results %}
+      <ul class="results">
+        {% for option in options %}
+          <li class="result result-c{{ forloop.counter }}{% if option.is_leader %} is-leader{% endif %}{% if option.is_mine %} is-mine{% endif %}">
+            <div class="result-head">
+              <span class="result-text">{{ option.text }}{% if option.is_mine %} <span class="badge">Senin seçimin</span>{% endif %}</span>
+              <span class="result-stats">%{{ option.percent }} · {{ option.vote_count }} oy</span>
+            </div>
+            <div class="bar"><div class="bar-fill" style="--pct: {{ option.percent }}%"></div></div>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="meta">Toplam {{ total_votes }} oy</p>
+    {% else %}
+      <form method="post" action="{% url 'poll_vote' poll.pk %}" class="vote-form">
+        {% csrf_token %}
+        {% for option in options %}
+          <button type="submit" name="option" value="{{ option.pk }}" class="option option-c{{ forloop.counter }}">{{ option.text }}</button>
+        {% endfor %}
+      </form>
+      <p><a href="?sonuclar=1">Oy vermeden sonuçları gör</a></p>
+    {% endif %}
+
+    {% if is_owner %}
+      <a href="{% url 'poll_delete' poll.pk %}" class="btn btn-danger">Sil</a>
+    {% endif %}
+  </article>
+{% endblock %}

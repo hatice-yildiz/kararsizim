@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Anketler</h1>
+  {% for poll in page %}
+    {% include "polls/_card.html" %}
+  {% empty %}
+    <p>Henüz anket yok. İlk kararsızlığı sen paylaş! 🤔</p>
+  {% endfor %}
+  {% if page.has_other_pages %}
+    <nav class="pagination">
+      {% if page.has_previous %}<a href="?sayfa={{ page.previous_page_number }}">← Önceki</a>{% endif %}
+      <span>{{ page.number }} / {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a href="?sayfa={{ page.next_page_number }}">Sonraki →</a>{% endif %}
+    </nav>
+  {% endif %}
+{% endblock %}

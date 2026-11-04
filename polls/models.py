@@ -20,6 +20,11 @@ class Poll(models.Model):
     def __str__(self):
         return self.question
 
+    @property
+    def accent(self):
+        """Kart şeridi için 1-5 arası renk numarası."""
+        return (self.pk or 0) % 5 + 1
+
 
 class Option(models.Model):
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE, related_name="options")

@@ -1,13 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
-  <h1>Anketler</h1>
+  <div class="page-head">
+    <h1>Kararsız mısın? Sor, oyla, karar ver.</h1>
+  </div>
   {% for poll in page %}
     {% include "polls/_card.html" %}
   {% empty %}
-    <p>Henüz anket yok. İlk kararsızlığı sen paylaş! 🤔</p>
+    <div class="empty">
+      <p>Henüz anket yok. İlk kararsızlığı sen paylaş! 🤔</p>
+      <a href="{% if user.is_authenticated %}{% url 'poll_create' %}{% else %}/giris/?next=/anket/yeni/{% endif %}" class="btn btn-primary">Anket Oluştur</a>
+    </div>
   {% endfor %}
   {% if page.has_other_pages %}
-    <nav class="pagination">
+    <nav class="pagination" aria-label="Sayfalama">
       {% if page.has_previous %}<a href="?sayfa={{ page.previous_page_number }}">← Önceki</a>{% endif %}
       <span>{{ page.number }} / {{ page.paginator.num_pages }}</span>
       {% if page.has_next %}<a href="?sayfa={{ page.next_page_number }}">Sonraki →</a>{% endif %}

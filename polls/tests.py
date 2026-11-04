@@ -306,3 +306,36 @@ class VoterCookieTests(TestCase):
         r = self.client.post(reverse("poll_vote", args=[poll.pk]), {"option": poll.options.first().pk})
         self.assertEqual(r.status_code, 302)
         self.assertEqual(Vote.objects.count(), 1)
+
+
+from django.test import override_settings
+
+
+class ErrorPageTests(TestCase):
+    @override_settings(DEBUG=False, ALLOWED_HOSTS=["testserver"])
+    def test_404_page_is_turkish(self):
+        r = self.client.get("/olmayan-sayfa/")
+        self.assertContains(r, "Sayfa bulunamadı", status_code=404)
+
+    def test_500_template_renders_standalone(self):
+        from django.template.loader import render_to_string
+        html = render_to_string("500.html")
+        self.assertIn("Bir şeyler ters gitti", html)
+
+
+class DesignSmokeTests(TestCase):
+    def test_pages_include_font_and_stylesheet(self):
+        r = self.client.get("/")
+        self.assertContains(r, "Plus+Jakarta+Sans")
+        self.assertContains(r, "css/style.css")
+        self.assertContains(r, "js/main.js")
+
+    def test_create_page_loads_poll_form_js(self):
+        u = User.objects.create_user(username="ali", email="a@example.com", password="p")
+        self.client.force_login(u)
+        self.assertContains(self.client.get("/anket/yeni/"), "js/poll_form.js")
+
+    def test_card_accent_cycles_1_to_5(self):
+        u = User.objects.create_user(username="ali", email="a@example.com", password="p")
+        accents = {make_poll(u, question=str(i)).accent for i in range(10)}
+        self.assertEqual(accents, {1, 2, 3, 4, 5})

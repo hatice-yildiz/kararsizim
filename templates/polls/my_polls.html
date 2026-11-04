@@ -1,10 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Anketlerim · Kararsızım{% endblock %}
 {% block content %}
-  <h1>Anketlerim</h1>
+  <div class="page-head">
+    <h1>Anketlerim</h1>
+  </div>
   {% for poll in polls %}
     {% include "polls/_card.html" %}
   {% empty %}
-    <p>Henüz anketin yok. <a href="{% url 'poll_create' %}">İlk anketini oluştur</a> 🤔</p>
+    <div class="empty">
+      <p>Henüz anketin yok. İlk kararsızlığını paylaş! 🤔</p>
+      <a href="{% url 'poll_create' %}" class="btn btn-primary">Anket Oluştur</a>
+    </div>
   {% endfor %}
 {% endblock %}

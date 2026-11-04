@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 {% block title %}{{ poll.question }} · Kararsızım{% endblock %}
 {% block content %}
-  <article class="card">
+  <article class="card strip-c{{ poll.accent }}">
     <h1>{{ poll.question }}</h1>
-    <p class="meta">@{{ poll.created_by.username }} · {{ poll.created_at|timesince }} önce</p>
-    {% if poll.description %}<p>{{ poll.description|linebreaksbr }}</p>{% endif %}
+    <p class="meta"><strong>@{{ poll.created_by.username }}</strong> · {{ poll.created_at|timesince }} önce</p>
+    {% if poll.description %}<p class="description">{{ poll.description|linebreaksbr }}</p>{% endif %}
 
     {% if show_results %}
       <ul class="results">
         {% for option in options %}
           <li class="result result-c{{ forloop.counter }}{% if option.is_leader %} is-leader{% endif %}{% if option.is_mine %} is-mine{% endif %}">
             <div class="result-head">
-              <span class="result-text">{{ option.text }}{% if option.is_mine %} <span class="badge">Senin seçimin</span>{% endif %}</span>
+              <span class="result-text">{{ option.text }}{% if option.is_mine %}<span class="badge">Senin seçimin</span>{% endif %}</span>
               <span class="result-stats">%{{ option.percent }} · {{ option.vote_count }} oy</span>
             </div>
-            <div class="bar"><div class="bar-fill" style="--pct: {{ option.percent }}%"></div></div>
+            <div class="bar" role="img" aria-label="{{ option.text }}: yüzde {{ option.percent }}"><div class="bar-fill" style="--pct: {{ option.percent }}%"></div></div>
           </li>
         {% endfor %}
       </ul>
@@ -26,11 +26,13 @@
           <button type="submit" name="option" value="{{ option.pk }}" class="option option-c{{ forloop.counter }}">{{ option.text }}</button>
         {% endfor %}
       </form>
-      <p><a href="?sonuclar=1">Oy vermeden sonuçları gör</a></p>
+      <a class="see-results" href="?sonuclar=1">Oy vermeden sonuçları gör</a>
     {% endif %}
 
     {% if is_owner %}
-      <a href="{% url 'poll_delete' poll.pk %}" class="btn btn-danger">Sil</a>
+      <div class="card-actions">
+        <a href="{% url 'poll_delete' poll.pk %}" class="btn btn-danger btn-sm">Anketi Sil</a>
+      </div>
     {% endif %}
   </article>
 {% endblock %}

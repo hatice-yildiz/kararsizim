@@ -2,6 +2,7 @@
 {% load static %}
 {% block title %}Anket Oluştur · Kararsızım{% endblock %}
 {% block content %}
+  <div class="form-card">
   <h1>Anket Oluştur</h1>
   <form method="post" novalidate id="poll-form">
     {% csrf_token %}
@@ -33,5 +34,6 @@
 
     <button type="submit" class="btn btn-primary">Anketi Yayınla</button>
   </form>
+  </div>
 {% endblock %}
 {% block extra_js %}<script src="{% static 'js/poll_form.js' %}"></script>{% endblock %}
